@@ -1,6 +1,7 @@
 # pert
 
-A Clojure library designed to ... well, that part is up to you.
+PERT estimation. Looks like there's a nice free series on it to be found at
+https://www.deepfriedbrainproject.com/2010/07/pert-formula.html
 
 ## Usage
 
