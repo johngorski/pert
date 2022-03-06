@@ -1,4 +1,5 @@
-(ns pert.random-variables)
+(ns pert.random-variables
+  (:import (org.apache.commons.math3.distribution BetaDistribution)))
 
 (def r (java.util.Random.))
 
@@ -93,3 +94,115 @@
 
 (estimate 10000 (uniform 0 1))
 ;; => {:mean 0.4990765240630893, :std-dev 0.28737847522825544}
+
+(estimate 10000 (max-of (gaussian 10 4) (gaussian 11 2)))
+;; => {:mean 12.328146230474472, :std-dev 2.4136455030297768}
+;; => {:mean 12.328824181278293, :std-dev 2.3997693690553588}
+;; => {:mean 12.338471902058881, :std-dev 2.405803234033849}
+;; => {:mean 12.325619589575075, :std-dev 2.3906547089454744}
+;; => {:mean 12.314477664216248, :std-dev 2.4036161190372667}
+;; => {:mean 12.346640153819859, :std-dev 2.4322755424973033}
+;; => {:mean 12.343769654161223, :std-dev 2.443541428693029}
+;; => {:mean 12.30903267330295, :std-dev 2.396867388276872}
+;; => {:mean 12.3690737984968, :std-dev 2.4091128179435333}
+;; => {:mean 12.300765188801998, :std-dev 2.411493470303583}
+;; => {:mean 12.357482816567309, :std-dev 2.4117818682221817}
+
+(let [dist (BetaDistribution. 2 5)
+      b-rv (reify Variable (sample [_] (.sample dist)))]
+  (estimate 10000 b-rv))
+;; => {:mean 0.28711780601102066, :std-dev 0.1589954521989701}
+
+(comment)
+(defn pert->beta-distribution
+  "Attempt from https://www.deepfriedbrainproject.com/2010/07/pert-formula.html"
+  [low m high]
+  (let [rt-2 (Math/sqrt 2)
+        midpoint (/ (+ low high) 2)
+        [alpha beta] (cond
+                       (< m midpoint)
+                       [(- 3 rt-2) (+ 3 rt-2)]
+
+                       (= m midpoint)
+                       [3 3]
+
+                       (< midpoint m)
+                       [(+ 3 rt-2) (- 3 rt-2)])
+        dist (BetaDistribution. alpha beta)
+        a low
+        w (- high low)]
+    (reify Variable (sample [_] (+ a (* w (.sample dist)))))))
+
+(comment
+  (defn pert->beta-distribution
+    "Attempt from https://mattrauch.github.io/2019/09/21/approximation"
+    [a m c]
+    (let [mu (/ (+ a (* 4 m) c) 6)
+          alpha (/
+                 (* (- mu a) (- (* 2 m) a c))
+                 (* (- m mu) (- c a)))
+          beta (/
+                (* alpha (- c mu))
+                (- mu a))
+          dist (BetaDistribution. alpha beta)
+          w (- c a)]
+      (reify Variable (sample [_] (+ a (* w (.sample dist))))))))
+
+(defn pert-mean [a m b]
+  (/ (+ a (* 4 m) b) 6))
+
+(defn pert-std-dev [a m b]
+  (/ (- b a) 6))
+
+(pert-mean 2 5 8)
+;; => 5
+(pert-std-dev 2 5 8)
+;; => 1
+
+(estimate 10000 (pert->beta-distribution 2 5 8))
+;; => {:mean 6.421126457056413, :std-dev 1.012483566637073}
+;; => {:mean 6.426717679870808, :std-dev 0.9899105927894863}
+;; => {:mean 6.399932344779283, :std-dev 1.0013731731047766}
+;; => {:mean 6.43175528907811, :std-dev 0.9932113308962013}
+;; => {:mean 6.402619468653987, :std-dev 1.0034052293784974}
+;; => {:mean 6.419342281439285, :std-dev 0.9976661575502696}
+;; => {:mean 6.424355963344965, :std-dev 0.992634690677372}
+;; => {:mean 6.416194100629757, :std-dev 1.0013918922206082}
+;; => {:mean 6.422185625196825, :std-dev 1.0059127675929793}
+
+(let [rt-2 (Math/sqrt 2)
+      [alpha beta] [(- 3 rt-2) (+ 3 rt-2)]
+      dist (BetaDistribution. alpha beta)]
+  [(.inverseCumulativeProbability dist 0)
+   (.inverseCumulativeProbability dist 1)])
+
+(pert-mean 1 16 25)
+;; => 15
+(pert-std-dev 1 16 25)
+;; => 4
+(estimate 10000 (pert->beta-distribution 1 16 25))
+;; => {:mean 18.62668299515897, :std-dev 4.036824558103441}
+;; => {:mean 18.655541869529028, :std-dev 3.9586285577111857}
+;; => {:mean 18.712923291879495, :std-dev 4.026197619437551}
+;; => {:mean 18.634750831460163, :std-dev 4.0107016663173995}
+
+(pert-mean 1 10 25)
+;; => 11
+(pert-std-dev 1 10 25)
+;; => 4
+(estimate 10000 (pert->beta-distribution 1 10 25))
+;; => {:mean 7.3843963551075475, :std-dev 4.022698795625147}
+;; => {:mean 7.39696720696569, :std-dev 3.980879699383923}
+;; => {:mean 7.342781398608138, :std-dev 3.992918819737777}
+;; => {:mean 7.333316782052228, :std-dev 4.015678577237438}
+
+;; Means are consistently off of the text formula, standard deviations are consistently
+;; accurate.
+;; Seems like if we're holding alpha and beta constant then a and b may need to shift
+;; slightly?
+;; If we take the beta estimation shape parameters as-is, we can probably afford to shift
+;; a and b based on the mean and variance...right?
+;; What might have to give here is that a and b are probably a little different from the
+;; optimistic and pessimistic estimates.
+
+
