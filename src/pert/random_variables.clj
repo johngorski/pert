@@ -6,6 +6,12 @@
 (defprotocol Variable
   (sample [this]))
 
+(defn definitely [x]
+  (reify
+    Variable
+    (sample [this]
+      x)))
+
 (defn uniform [from to]
   ;; TODO: https://clojure.org/guides/spec#_specing_functions
   (let [width (- to from)]
@@ -38,9 +44,9 @@
 (def max-of (combine-with max))
 (def min-of (combine-with min))
 
-(sample (uniform 0 1))
-
-(sample (gaussian 0 1))
+(comment
+  (sample (uniform 0 1))
+  (sample (gaussian 0 1)))
 
 (deftype D [sides]
   Variable
@@ -50,7 +56,8 @@
 (defn x [n var]
   (apply sum-of (repeat n var)))
 
-(sort-by first (frequencies (repeatedly 121 #(sample (x 2 (D. 6))))))
+(comment
+  (sort-by first (frequencies (repeatedly 121 #(sample (x 2 (D. 6)))))))
 ;; => ([2 5] [3 4] [4 9] [5 10] [6 15] [7 24] [8 15] [9 14] [10 14] [11 6] [12 5])
 ;; => ([2 8] [3 13] [4 10] [5 14] [6 20] [7 17] [8 17] [9 9] [10 7] [11 5] [12 1])
 ;; => ([2 3] [3 7] [4 11] [5 14] [6 17] [7 21] [8 11] [9 16] [10 11] [11 7] [12 3])
@@ -75,45 +82,45 @@
     {:mean mean
      :std-dev (Math/sqrt variance)}))
 
-(estimate 10000 (gaussian 4 3))
-;; => {:mean 4.020923898459046, :std-dev 2.9969052751018124}
-;; => {:mean 3.9518470171049436, :std-dev 3.0320527853405266}
-;; => {:mean 4.045326830030188, :std-dev 3.0031900872048145}
-;; => {:mean 3.9711829877877323, :std-dev 3.012916514541721}
-;; => {:mean 3.9557327732322696, :std-dev 2.9600958199340917}
+(comment
+  (estimate 10000 (gaussian 4 3))
+  ;; => {:mean 4.020923898459046, :std-dev 2.9969052751018124}
+  ;; => {:mean 3.9518470171049436, :std-dev 3.0320527853405266}
+  ;; => {:mean 4.045326830030188, :std-dev 3.0031900872048145}
+  ;; => {:mean 3.9711829877877323, :std-dev 3.012916514541721}
+  ;; => {:mean 3.9557327732322696, :std-dev 2.9600958199340917}
 
-(estimate 10000 (sum-of (gaussian 4 3) (gaussian 6 4)))
-;; => {:mean 10.01493985297808, :std-dev 5.010778799829074}
-;; => {:mean 9.935628205491945, :std-dev 4.980924043657126}
-;; => {:mean 9.870373430115997, :std-dev 4.97871378915859}
-;; => {:mean 9.932173626888822, :std-dev 4.990704352433281}
-;; => {:mean 10.040386546448817, :std-dev 4.987096863024789}
+  (estimate 10000 (sum-of (gaussian 4 3) (gaussian 6 4)))
+  ;; => {:mean 10.01493985297808, :std-dev 5.010778799829074}
+  ;; => {:mean 9.935628205491945, :std-dev 4.980924043657126}
+  ;; => {:mean 9.870373430115997, :std-dev 4.97871378915859}
+  ;; => {:mean 9.932173626888822, :std-dev 4.990704352433281}
+  ;; => {:mean 10.040386546448817, :std-dev 4.987096863024789}
 
-(estimate 10000 (x 2 (D. 6)))
-;; => {:mean 17369/2500, :std-dev 2.4313464139316827}
+  (estimate 10000 (x 2 (D. 6)))
+  ;; => {:mean 17369/2500, :std-dev 2.4313464139316827}
 
-(estimate 10000 (uniform 0 1))
-;; => {:mean 0.4990765240630893, :std-dev 0.28737847522825544}
+  (estimate 10000 (uniform 0 1))
+  ;; => {:mean 0.4990765240630893, :std-dev 0.28737847522825544}
 
-(estimate 10000 (max-of (gaussian 10 4) (gaussian 11 2)))
-;; => {:mean 12.328146230474472, :std-dev 2.4136455030297768}
-;; => {:mean 12.328824181278293, :std-dev 2.3997693690553588}
-;; => {:mean 12.338471902058881, :std-dev 2.405803234033849}
-;; => {:mean 12.325619589575075, :std-dev 2.3906547089454744}
-;; => {:mean 12.314477664216248, :std-dev 2.4036161190372667}
-;; => {:mean 12.346640153819859, :std-dev 2.4322755424973033}
-;; => {:mean 12.343769654161223, :std-dev 2.443541428693029}
-;; => {:mean 12.30903267330295, :std-dev 2.396867388276872}
-;; => {:mean 12.3690737984968, :std-dev 2.4091128179435333}
-;; => {:mean 12.300765188801998, :std-dev 2.411493470303583}
-;; => {:mean 12.357482816567309, :std-dev 2.4117818682221817}
+  (estimate 10000 (max-of (gaussian 10 4) (gaussian 11 2)))
+  ;; => {:mean 12.328146230474472, :std-dev 2.4136455030297768}
+  ;; => {:mean 12.328824181278293, :std-dev 2.3997693690553588}
+  ;; => {:mean 12.338471902058881, :std-dev 2.405803234033849}
+  ;; => {:mean 12.325619589575075, :std-dev 2.3906547089454744}
+  ;; => {:mean 12.314477664216248, :std-dev 2.4036161190372667}
+  ;; => {:mean 12.346640153819859, :std-dev 2.4322755424973033}
+  ;; => {:mean 12.343769654161223, :std-dev 2.443541428693029}
+  ;; => {:mean 12.30903267330295, :std-dev 2.396867388276872}
+  ;; => {:mean 12.3690737984968, :std-dev 2.4091128179435333}
+  ;; => {:mean 12.300765188801998, :std-dev 2.411493470303583}
+  ;; => {:mean 12.357482816567309, :std-dev 2.4117818682221817}
 
-(let [dist (BetaDistribution. 2 5)
-      b-rv (reify Variable (sample [_] (.sample dist)))]
-  (estimate 10000 b-rv))
+  (let [dist (BetaDistribution. 2 5)
+        b-rv (reify Variable (sample [_] (.sample dist)))]
+    (estimate 10000 b-rv)))
 ;; => {:mean 0.28711780601102066, :std-dev 0.1589954521989701}
 
-(comment)
 (defn pert->beta-distribution
   "Attempt from https://www.deepfriedbrainproject.com/2010/07/pert-formula.html"
   [low m high]
@@ -154,43 +161,44 @@
 (defn pert-std-dev [a m b]
   (/ (- b a) 6))
 
-(pert-mean 2 5 8)
-;; => 5
-(pert-std-dev 2 5 8)
-;; => 1
+(comment
+  (pert-mean 2 5 8)
+  ;; => 5
+  (pert-std-dev 2 5 8)
+  ;; => 1
 
-(estimate 10000 (pert->beta-distribution 2 5 8))
-;; => {:mean 6.421126457056413, :std-dev 1.012483566637073}
-;; => {:mean 6.426717679870808, :std-dev 0.9899105927894863}
-;; => {:mean 6.399932344779283, :std-dev 1.0013731731047766}
-;; => {:mean 6.43175528907811, :std-dev 0.9932113308962013}
-;; => {:mean 6.402619468653987, :std-dev 1.0034052293784974}
-;; => {:mean 6.419342281439285, :std-dev 0.9976661575502696}
-;; => {:mean 6.424355963344965, :std-dev 0.992634690677372}
-;; => {:mean 6.416194100629757, :std-dev 1.0013918922206082}
-;; => {:mean 6.422185625196825, :std-dev 1.0059127675929793}
+  (estimate 10000 (pert->beta-distribution 2 5 8))
+  ;; => {:mean 6.421126457056413, :std-dev 1.012483566637073}
+  ;; => {:mean 6.426717679870808, :std-dev 0.9899105927894863}
+  ;; => {:mean 6.399932344779283, :std-dev 1.0013731731047766}
+  ;; => {:mean 6.43175528907811, :std-dev 0.9932113308962013}
+  ;; => {:mean 6.402619468653987, :std-dev 1.0034052293784974}
+  ;; => {:mean 6.419342281439285, :std-dev 0.9976661575502696}
+  ;; => {:mean 6.424355963344965, :std-dev 0.992634690677372}
+  ;; => {:mean 6.416194100629757, :std-dev 1.0013918922206082}
+  ;; => {:mean 6.422185625196825, :std-dev 1.0059127675929793}
 
-(let [rt-2 (Math/sqrt 2)
-      [alpha beta] [(- 3 rt-2) (+ 3 rt-2)]
-      dist (BetaDistribution. alpha beta)]
-  [(.inverseCumulativeProbability dist 0)
-   (.inverseCumulativeProbability dist 1)])
+  (let [rt-2 (Math/sqrt 2)
+        [alpha beta] [(- 3 rt-2) (+ 3 rt-2)]
+        dist (BetaDistribution. alpha beta)]
+    [(.inverseCumulativeProbability dist 0)
+     (.inverseCumulativeProbability dist 1)])
 
-(pert-mean 1 16 25)
-;; => 15
-(pert-std-dev 1 16 25)
-;; => 4
-(estimate 10000 (pert->beta-distribution 1 16 25))
-;; => {:mean 18.62668299515897, :std-dev 4.036824558103441}
-;; => {:mean 18.655541869529028, :std-dev 3.9586285577111857}
-;; => {:mean 18.712923291879495, :std-dev 4.026197619437551}
-;; => {:mean 18.634750831460163, :std-dev 4.0107016663173995}
+  (pert-mean 1 16 25)
+  ;; => 15
+  (pert-std-dev 1 16 25)
+  ;; => 4
+  (estimate 10000 (pert->beta-distribution 1 16 25))
+  ;; => {:mean 18.62668299515897, :std-dev 4.036824558103441}
+  ;; => {:mean 18.655541869529028, :std-dev 3.9586285577111857}
+  ;; => {:mean 18.712923291879495, :std-dev 4.026197619437551}
+  ;; => {:mean 18.634750831460163, :std-dev 4.0107016663173995}
 
-(pert-mean 1 10 25)
-;; => 11
-(pert-std-dev 1 10 25)
-;; => 4
-(estimate 10000 (pert->beta-distribution 1 10 25))
+  (pert-mean 1 10 25)
+  ;; => 11
+  (pert-std-dev 1 10 25)
+  ;; => 4
+  (estimate 10000 (pert->beta-distribution 1 10 25)))
 ;; => {:mean 7.3843963551075475, :std-dev 4.022698795625147}
 ;; => {:mean 7.39696720696569, :std-dev 3.980879699383923}
 ;; => {:mean 7.342781398608138, :std-dev 3.992918819737777}
@@ -205,4 +213,8 @@
 ;; What might have to give here is that a and b are probably a little different from the
 ;; optimistic and pessimistic estimates.
 
+(defmulti construct first)
+
+(defmethod construct :pert-3pt [[_ lo nom hi]] (pert->beta-distribution lo nom hi))
+(defmethod construct :definitely [[_ x]] (definitely x))
 
