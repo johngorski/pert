@@ -214,7 +214,13 @@
 ;; optimistic and pessimistic estimates.
 
 (defmulti construct first)
+(defmethod construct :fn [[_ f & args]] (apply (combine-with f) (map construct args)))
 
-(defmethod construct :pert-3pt [[_ lo nom hi]] (pert->beta-distribution lo nom hi))
+(defmethod construct :custom [[_ var]] var)
+(defmethod construct :D [[_ sides]] (D. sides))
 (defmethod construct :definitely [[_ x]] (definitely x))
-
+(defmethod construct :gaussian [[_ & args]] (apply gaussian args))
+(defmethod construct :pert-gauss [[_ & args]] (apply pert args))
+(defmethod construct :pert-3pt [[_ lo nom hi]] (pert->beta-distribution lo nom hi))
+(defmethod construct :uniform [[_ & args]] (apply uniform args))
+(defmethod construct :x [[_ n X]] (construct (concat [:fn +] (repeat n X))))
