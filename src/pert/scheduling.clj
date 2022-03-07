@@ -38,6 +38,43 @@
     (fn [{:keys [deps]}]
       (empty? (set/difference deps completed)))))
 
+(defn assign-idle-workers
+  "Updated in-progress and backlog tasks when idle workers are assigned."
+  [record now in-progress backlog durations workers]
+  (let [idle-workers (reduce disj workers (map :worker (keys in-progress)))
+        available-tasks (filter (available-based-on record) backlog)
+        assignments (map (fn [worker task] {:worker worker, :task task})
+                         idle-workers
+                         available-tasks)
+        in-progress' (into in-progress
+                           (map (fn [{:keys [worker task]}]
+                                  (let [id (:id task)
+                                        duration (get durations id)
+                                        end (+ now duration)]
+                                    [{:worker worker
+                                      :task id
+                                      :start now}
+                                     end])))
+                           assignments)
+        assigned-tasks (into #{} (map (comp :id :task)) assignments)
+        backlog' (remove #(assigned-tasks (:id %)) backlog)]
+    {:in-progress' in-progress'
+     :backlog' backlog'}))
+
+(defn record-finished-tasks
+  ""
+  [record now in-progress]
+  (let [[finished-tasks started-tasks]
+        (partition-by (fn [[_ end]] (<= end now)) (seq in-progress))
+
+        record' (into record
+                      (map (fn [[{:keys [worker task start]} end]]
+                             [task {:worker worker, :start start, :end end}]))
+                      finished-tasks)
+        in-progress' (into (priority-map) started-tasks)]
+    {:record' record'
+     :in-progress' in-progress'}))
+
 (defn hindcast-tasks
   "With task durations already known, lay them out."
   [record now in-progress backlog durations workers]
@@ -57,35 +94,13 @@
     (and (some (available-based-on record) backlog)
          (let [idle-workers (reduce disj workers (map :worker (keys in-progress)))]
            (not-empty idle-workers)))
-    (let [idle-workers (reduce disj workers (map :worker (keys in-progress)))
-          available-tasks (filter (available-based-on record) backlog)
-          assignments (map (fn [worker task] {:worker worker, :task task})
-                           idle-workers
-                           available-tasks)
-          in-progress' (into in-progress
-                             (map (fn [{:keys [worker task]}]
-                                    (let [id (:id task)
-                                          duration (get durations id)
-                                          end (+ now duration)]
-                                      [{:worker worker
-                                        :task id
-                                        :start now}
-                                       end])))
-                             assignments)
-          assigned-tasks (into #{} (map (comp :id :task)) assignments)
-          backlog' (remove #(assigned-tasks (:id %)) backlog)]
+    (let [{:keys [in-progress' backlog']}
+          (assign-idle-workers record now in-progress backlog durations workers)]
       (recur record now in-progress' backlog' durations workers))
 
     ;; If tasks are finished, record them.
     (some (fn [[_ end]] (<= end now)) in-progress)
-    (let [[finished-tasks started-tasks]
-          (partition-by (fn [[_ end]] (<= end now)) (seq in-progress))
-
-          record' (into record
-                        (map (fn [[{:keys [worker task start]} end]]
-                               [task {:worker worker, :start start, :end end}]))
-                        finished-tasks)
-          in-progress' (into (priority-map) started-tasks)]
+    (let [{:keys [record' in-progress']} (record-finished-tasks record now in-progress)]
       (recur record' now in-progress' backlog durations workers))
 
     ;; If everyone's busy with in-progress work, advance to the next finished task.
