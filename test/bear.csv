@@ -1,0 +1,11 @@
+ID,Dependencies,Estimate
+cut fur,,2
+stuff fur,cut fur,6
+cut cloth,,2
+sew clothes,cut cloth,2
+embroider,sew clothes,2
+cut accessories,,1
+sew accessories,cut accessories,2
+dress bear,"stuff fur, sew accessories, embroider",3
+package bear,dress bear,1
+ship bear,package bear,1

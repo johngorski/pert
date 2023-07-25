@@ -1,6 +1,9 @@
 (ns pert.scheduling-test
   (:require
+   [clojure.data.csv :as csv]
+   [clojure.java.io :as io]
    [clojure.spec.alpha :as spec]
+   [clojure.string :as string]
    [clojure.test :refer :all]
    [pert.random-variables :as random-variables]
    [pert.scheduling :refer :all]))
@@ -165,3 +168,57 @@
                 "sew clothes" {:start 2, :end 4}})))
       (testing "Worker timelines don't overlap"
         (is (not (some overlap? (vals timelines))))))))
+
+(deftest csv-parsing
+  (testing "Dependency cells split as expected"
+    (is (= #{"a" "b" "c" "d" "ef" "g"}) (parse-dependencies ",,a,b  ,c ,   d, ef, g,,,,")))
+  (testing "Empty dependency string means no dependencies"
+    (is (= #{} (parse-dependencies ""))))
+  (testing "Example CSV doc gets expected backlog"
+    (is (= [{:id "a", :deps #{}} {:id "b", :deps #{"a"}} {:id "c", :deps #{}}
+            {:id "d", :deps #{"c"}} {:id "e", :deps #{"d"}} {:id "f", :deps #{}}
+            {:id "g", :deps #{"f"}} {:id "h", :deps #{"e" "b" "g"}}
+            {:id "i", :deps #{"h"}} {:id "j", :deps #{"i"}}]
+           (doall (rows->backlog (csv->rows "test/example.csv"))))))
+  )
+
+(comment
+  (with-open [writer (io/writer "test/bear.csv")]
+    (csv/write-csv
+     writer
+     (cons ["ID" "Dependencies" "Estimate"]
+           (map
+            (fn [[id deps est]]
+              [id (string/join ", " (seq deps)) est])
+            [["cut fur" #{} 2]
+             ["stuff fur" #{"cut fur"} 6]
+             ["cut cloth" #{} 2]
+             ["sew clothes" #{"cut cloth"} 2]
+             ["embroider" #{"sew clothes"} 2]
+             ["cut accessories" #{} 1]
+             ["sew accessories" #{"cut accessories"} 2]
+             ["dress bear" #{"embroider" "stuff fur" "sew accessories"} 3]
+             ["package bear" #{"dress bear"} 1]
+             ["ship bear" #{"package bear"} 1]]))))
+
+  (with-open [reader (io/reader "test/example.csv")]
+    (doall
+     (csv/read-csv reader)))
+
+  (let [rows (csv->rows "test/example.csv")
+        backlog (rows->backlog rows)
+        estimates (rows->3pt-estimates rows)]
+    (project-record {:backlog backlog, :estimates estimates, :workers #{"Megan" "John"}}))
+  )
+
+(comment
+  {"d" {:worker "Megan", :start 1.323462834946807, :end 2.490815823384076},
+   "f" {:worker "Megan", :start 4.490815823384076, :end 5.987796192462242},
+   "e" {:worker "Megan", :start 2.490815823384076, :end 4.490815823384076},
+   "j" {:worker "John", :start 12.508293580469951, :end 13.508293580469951},
+   "a" {:worker "John", :start 0, :end 1.9648039531326515},
+   "i" {:worker "John", :start 11.508293580469951, :end 12.508293580469951},
+   "b" {:worker "John", :start 1.9648039531326515, :end 7.9421645467311635},
+   "g" {:worker "Megan", :start 5.987796192462242, :end 8.508293580469951},
+   "h" {:worker "John", :start 8.508293580469951, :end 11.508293580469951},
+   "c" {:worker "Megan", :start 0, :end 1.323462834946807}})

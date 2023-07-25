@@ -1,9 +1,13 @@
 (ns pert.scheduling
   (:require
+   [clojure.data.csv :as csv]
    [clojure.data.priority-map :refer [priority-map]]
+   [clojure.edn :as edn]
+   [clojure.java.io :as io]
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
    [clojure.spec.alpha :as spec]
+   [clojure.string :as string]
    [pert.random-variables :as random-variables]))
 
 ;; Why find a closed form for the random variables representing schedule
@@ -130,3 +134,85 @@
        (map (fn [[worker tasks]]
               [worker (sort-by :start (map #(dissoc % :worker) tasks))]))
        (into {})))
+
+(defn parse-dependencies
+  "Parse dependency cell into set of dependency IDs."
+  ([s] (parse-dependencies #"\s*,\s*" s))
+  ([separator s] (into #{} (filter not-empty) (string/split s separator))))
+
+(defn csv->rows
+  [filepath]
+  (with-open [reader (io/reader filepath)]
+    (let [rows (doall (csv/read-csv reader))]
+      (map zipmap
+           (repeat (first rows))
+           (rest rows)))))
+
+(defn rows->backlog
+  "Sequence of rows to a project backlog. First row is a header row. 2-arity flavor includes a translation map."
+  ([rows] (rows->backlog {:id "ID", :deps "Dependencies"} rows))
+  ([{:keys [id deps]} rows]
+   (->> rows
+        (map (fn [row]
+               {:id (get row id)
+                :deps (parse-dependencies (get row deps))})))))
+
+(defn backlog->dependencies
+  "Set of directed edges from a task to the tasks it depends on, by ID"
+  [backlog]
+  (into #{}
+        (mapcat (fn [{:keys [id deps]}]
+                  (map (fn [dep] [id dep]) deps)))
+        backlog))
+
+(defn rows->vertices
+  ""
+  ([rows]
+   (rows->vertices
+    {:id "ID", :title "Title", :description "Description"}
+    rows))
+  ([{:keys [id title description]} rows]
+   (map
+    (fn [row]
+      [(get row id) {:label (get row title (get row id)), :tooltip (get row description)}])
+    rows)
+   ))
+
+(defn rows->3pt-estimates
+  ([rows] (rows->3pt-estimates {:id "ID", :lo "Low", :nom "Estimate", :hi "High"} rows))
+  ([{:keys [id lo nom hi]} rows]
+   (into {}
+         (map (fn [row]
+                [(get row id)
+                 (cons :pert-3pt
+                       (map
+                        (fn [n] (edn/read-string (get row n)))
+                        [lo nom hi]))])
+         rows))))
+
+(comment
+  (with-open [reader (io/reader "test/example.csv")]
+    (backlog->dependencies (rows->backlog (csv/read-csv reader))))
+  (rows->vertices (csv->rows "test/example.csv"))
+  (rows->3pt-estimates (csv->rows "test/example.csv"))
+  )
+
+;; Neat stuff! What are some useful things to estimate, once we have task dependencies and estimates?
+;; 1. ETA/total cost
+;; 2. Changes to ETA as parallelism increases/decreases
+;; 3. ETA for a specific task as parallelism changes
+;; 4. ETA as scope changes/alternative designs (implicit to creating a single project)
+
+;; We should be able to estimate the ETA by looking at the max end date of a task.
+;; If that task didn't need to be completed for the ETA, it's out of scope.
+;; We might also want to estimate the ETA of a specific task.
+;; The rest is interesting at a nerdy/detailed level, but I haven't been asked for that level of
+;; detail ever.
+
+;; Simple enough: Let's define the total time for a project as the max value of an end date of a task
+;; based on its breakdown and estimates. From there, we can estimate away.
+
+;; Turns out we don't seem at this point to need the neato combinatorics of the original estimation
+;; engine for the scope of our question, but who knows?
+
+
