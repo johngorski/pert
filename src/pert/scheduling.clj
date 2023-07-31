@@ -8,7 +8,9 @@
    [clojure.set :as set]
    [clojure.spec.alpha :as spec]
    [clojure.string :as string]
-   [pert.random-variables :as random-variables]))
+   [dorothy.core :as dorothy]
+   [pert.random-variables :as random-variables]
+   ))
 
 ;; Why find a closed form for the random variables representing schedule
 ;; estimates when you can simulate instead?
@@ -237,4 +239,31 @@
               (apply max)
               )))
       random-record))))
+
+(defn csv->graph-data
+  "CSV project file to graph data"
+  [csv-file]
+  (let [rows (csv->rows csv-file)
+        vertices (rows->vertices rows)
+        edges (-> rows rows->backlog backlog->dependencies)]
+    (concat vertices edges)))
+
+(comment
+  (csv->graph-data "test/example.csv")
+  )
+
+(defn csv->dot
+  "CSV project file to task dependencies"
+  [csv-file]
+  (-> csv-file
+      csv->graph-data
+      dorothy/digraph
+      dorothy/dot
+      ))
+
+(comment
+  (csv->dot "test/example.csv"))
+
+
+
 
