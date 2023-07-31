@@ -207,8 +207,34 @@
 
   (let [rows (csv->rows "test/example.csv")
         backlog (rows->backlog rows)
-        estimates (rows->3pt-estimates rows)]
-    (project-record {:backlog backlog, :estimates estimates, :workers #{"Megan" "John"}}))
+        estimates (rows->3pt-estimates rows)
+        record (project-record {:backlog backlog, :estimates estimates, :workers #{"Megan" "John"}})]
+    (->> record
+         ;; vals
+         ;; (map :end)
+         ;; (apply max)
+         ))
+
+  (let [ETE (csv->ETE "test/example.csv")]
+    (random-variables/estimate 10000 ETE))
+  ;; => {:mean 22.254977520216386, :std-dev 1.9733462549327425}
+  ;; => {:mean 22.29659833024608, :std-dev 1.9838952653790716}
+  ;; => {:mean 22.262001303616636, :std-dev 1.993646070808031}
+  ;; => {:mean 22.285843249654775, :std-dev 1.983161076472538}
+
+  (let [ETE (csv->ETE 2 "test/example.csv")]
+    (random-variables/estimate 10000 ETE))
+  ;; => {:mean 14.446350521352835, :std-dev 1.1685050075833878}
+  ;; => {:mean 14.44700664775564, :std-dev 1.1546990523336935}
+  ;; => {:mean 14.41511394253594, :std-dev 1.1545849358760427}
+  ;; => {:mean 14.443845571824204, :std-dev 1.1686205560846399}
+
+  (let [ETE (csv->ETE 20 "test/example.csv")]
+    (random-variables/estimate 10000 ETE))
+  ;; => {:mean 13.282937394321182, :std-dev 1.5063232138615634}
+  ;; => {:mean 13.29439004821181, :std-dev 1.5016775269325153}
+  ;; => {:mean 13.275560368899445, :std-dev 1.5052753901208547}
+  ;; => {:mean 13.312250858647985, :std-dev 1.5181826174729272}
   )
 
 (comment

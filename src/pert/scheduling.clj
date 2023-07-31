@@ -215,4 +215,26 @@
 ;; Turns out we don't seem at this point to need the neato combinatorics of the original estimation
 ;; engine for the scope of our question, but who knows?
 
+(defn csv->ETE
+  "Takes a CSV file of project dependencies and 3-pt estimates and returns a random variable
+  representing the completion time of the last task"
+  ([csv-file] (csv->ETE 1 csv-file))
+  ([worker-count csv-file]
+   (let [rows (csv->rows csv-file)
+         backlog (rows->backlog rows)
+         estimates (rows->3pt-estimates rows)
+         random-record (reify
+                         random-variables/Variable
+                         (sample [_]
+                           (project-record {:backlog backlog
+                                            :estimates estimates
+                                            :workers (set (range worker-count))})))]
+     ((random-variables/combine-with
+       (fn [record]
+         (->> record
+              vals
+              (map :end)
+              (apply max)
+              )))
+      random-record))))
 
