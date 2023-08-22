@@ -9,6 +9,7 @@
    [clojure.spec.alpha :as spec]
    [clojure.string :as string]
    [dorothy.core :as dorothy]
+   [hiccup2.core :as hiccup]
    [pert.random-variables :as random-variables]
    ))
 

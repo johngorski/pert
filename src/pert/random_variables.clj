@@ -1,4 +1,5 @@
 (ns pert.random-variables
+  (:require [hiccup2.core :as hiccup])
   (:import (org.apache.commons.math3.distribution BetaDistribution)))
 
 (def r (java.util.Random.))
@@ -224,3 +225,58 @@
 (defmethod construct :pert-3pt [[_ lo nom hi]] (pert->beta-distribution lo nom hi))
 (defmethod construct :uniform [[_ & args]] (apply uniform args))
 (defmethod construct :x [[_ n X]] (construct (concat [:fn +] (repeat n X))))
+
+(defn interpolate-cdf
+  "Returns a linearly-interpolated cumulative distribution function based on the samples.
+  No fitting, just straight-line interpolation between sample points."
+  [xs]
+  (let [sorted (into [] (sort xs))
+        n (count sorted)
+        idx (fn [a x b] ;; binary search
+              (let [m (+ a (quot (- b a) 2))
+                    mid-left (sorted m)
+                    mid-right (sorted (inc m))]
+                (cond
+                  (= mid-right x) (inc m)
+                  (<= mid-left x mid-right) m
+                  (< x mid-left) (recur a x m)
+                  (<= mid-right x) (recur (inc m) x b)
+                  )
+                )
+              )]
+    (fn [x]
+      (cond
+        (< x (first sorted)) 0
+        (<= (last sorted) x) 1
+        :else (/ (inc (idx 0 x (dec n))) n)
+        ))))
+
+(defn status->rgb
+  "Get RGB color values from the chance of the task starting and the chance of it finishing.
+  Not started: Red (0xFF0000). In-progress: Yellow (0xFFFF00). Finished: Green (0x00FF00)."
+  [chance-started chance-finished]
+  [(* 255 (- 1 chance-finished))
+   (* 255 chance-started)
+   0])
+
+(defn task-gradient
+  "Gradient based on cdfs for a task starting and task finishing."
+  [start-cdf finish-cdf]
+  (fn [t]
+    (status->rgb (start-cdf t) (finish-cdf t))))
+
+(defn box
+  "Hiccup data for a box of color given as RGB vector on [0, 255]."
+  [[r g b]]
+  [:td {:style (str "background-color: rgb(" r "," g "," b ")")}]
+  )
+
+(comment
+  (str (hiccup/html
+        (box [255 255 0]))))
+
+;; TODO: Get a grid by day of table cells with rows as tasks and cells colored by projected status
+;; at the end of the day.
+
+
+

@@ -5,6 +5,7 @@
    [clojure.spec.alpha :as spec]
    [clojure.string :as string]
    [clojure.test :refer :all]
+   [hiccup2.core :as hiccup]
    [pert.random-variables :as random-variables]
    [pert.scheduling :refer :all]))
 
@@ -208,12 +209,45 @@
   (let [rows (csv->rows "test/example.csv")
         backlog (rows->backlog rows)
         estimates (rows->3pt-estimates rows)
-        record (project-record {:backlog backlog, :estimates estimates, :workers #{"Megan" "John"}})]
-    (->> record
-         ;; vals
-         ;; (map :end)
-         ;; (apply max)
-         ))
+        simulate #(project-record {:backlog backlog, :estimates estimates, :workers #{"Megan"}})
+        samples (repeatedly 10000 simulate)
+        gradient-for (fn [task]
+                       (random-variables/task-gradient
+                        (random-variables/interpolate-cdf (map (fn [sim] (get-in sim [task :start])) samples))
+                        (random-variables/interpolate-cdf (map (fn [sim] (get-in sim [task :end])) samples))
+                        ))
+        gradients (into {} (map (fn [{:keys [id]}] [id (gradient-for id)])) backlog)
+        days (range 15)
+        header [:tr [:th "Day"] (sequence (map (fn [day] [:th (str day)])) days)]
+        task-row (fn [task] [:tr [:th task] (sequence (map (fn [day] (random-variables/box ((gradients task) day)))) days)])
+        ]
+    (spit "/Users/jgorski/Desktop/gantt.html"
+          (str (hiccup/html {:mode :html}
+                            [:html
+                             [:body
+                              [:table
+                               header
+                               (map (comp task-row :id) backlog)
+                               ]]])))
+
+
+    ;; (->>
+    ;; hiccup/html
+    ;; str
+    ;; (spit "/Users/jgorski/Desktop/gantt.html")
+
+
+
+    ;; (repeatedly 3 simulate)
+    ;; vals
+    ;; (map :end)
+    ;; (apply max)
+
+
+    )
+
+  ;; (str (hiccup/html [:html [:body [:table [:tr [:th "Hi!"]]]]]))
+  ;; (str (hiccup/html [:tr (into [:-] (map (fn [day] [:th (str day)])) (range 3))]))
 
   (let [ETE (csv->ETE "test/example.csv")]
     (random-variables/estimate 10000 ETE))
