@@ -12,3 +12,8 @@ pom.xml.asc
 .hgignore
 .hg/
 .\#*
+.DS_Store
+.calva/
+.clj-kondo/
+.lsp/
+*.~undo-tree~
