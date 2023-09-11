@@ -255,9 +255,31 @@
   "Get RGB color values from the chance of the task starting and the chance of it finishing.
   Not started: Red (0xFF0000). In-progress: Yellow (0xFFFF00). Finished: Green (0x00FF00)."
   [chance-started chance-finished]
-  [(* 255 (- 1 chance-finished))
-   (* 255 chance-started)
+  [(int (Math/ceil (* 255 (- 1 chance-finished))))
+   (int (Math/ceil (* 255 chance-started)))
    0])
+
+(defn status-heights
+  "Divides 1.0 based on chance started and finished. Becomes relative heights of not started/in-progress/done."
+  [chance-started chance-finished]
+  (let [chance-not-started (- 1.0 chance-started chance-finished)]
+    [chance-not-started chance-started chance-finished]))
+
+(defn status->svg
+  "hiccup data for svg box with heights based on task status.
+  Not started = red on top, in-progress = yellow in middle, done = green in remainder."
+  [chance-started chance-finished]
+  (let [s 20
+        [r-h y-h g-h] (map (fn [x] (int (* s x))) (status-heights chance-started chance-finished))]
+    [:svg
+     [:rect {:x 0 :y 0 :width s :height r-h
+             :style "fill:red"}] ;; not started
+     [:rect {:x 0 :y r-h :width s :height y-h
+             :style "fill:yellow"}] ;; in-progress
+     [:rect {:x 0 :y (+ r-h y-h) :width s :height g-h
+             :style "fill:green"}] ;; done
+     ]
+    ))
 
 (defn task-gradient
   "Gradient based on cdfs for a task starting and task finishing."
@@ -268,8 +290,7 @@
 (defn box
   "Hiccup data for a box of color given as RGB vector on [0, 255]."
   [[r g b]]
-  [:td {:style (str "background-color: rgb(" r "," g "," b ")")}]
-  )
+  [:td {:style (str "background-color: rgb(" r "," g "," b ")")}])
 
 (comment
   (str (hiccup/html
