@@ -296,8 +296,4 @@
   (str (hiccup/html
         (box [255 255 0]))))
 
-;; TODO: Get a grid by day of table cells with rows as tasks and cells colored by projected status
-;; at the end of the day.
-
-
 

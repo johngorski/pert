@@ -228,40 +228,10 @@
                               [:table
                                header
                                (map (comp task-row :id) backlog)
-                               ]]])))
+                               ]]]))))
 
-    (defn csv->gantt-html
-      [in-csv]
-      (let [rows (csv->rows in-csv)
-            backlog (rows->backlog rows)
-            estimates (rows->3pt-estimates rows)
-            simulate #(project-record {:backlog backlog, :estimates estimates, :workers #{"Megan"}})
-            samples (repeatedly 10000 simulate)
-            gradient-for (fn [task]
-                           (random-variables/task-gradient
-                            (random-variables/interpolate-cdf (map (fn [sim] (get-in sim [task :start])) samples))
-                            (random-variables/interpolate-cdf (map (fn [sim] (get-in sim [task :end])) samples))
-                            ))
-            gradients (into {} (map (fn [{:keys [id]}] [id (gradient-for id)])) backlog)
-            days (range 75) ;; TODO: Get from max of samples. Days may only make sense so far.
-            header [:tr [:th "Day"] (sequence (map (fn [day] [:th (str day)])) days)]
-            task-row (fn [task] [:tr [:th task] (sequence (map (fn [day] (random-variables/box ((gradients task) day)))) days)])
-            ]
-        (str (hiccup/html {:mode :html}
-                          [:html
-                           [:body
-                            [:table
-                             header
-                             (map (comp task-row :id) backlog)
-                             ]]]))))
-
-    (spit "/Users/jgorski/Desktop/gantt.html"
-          (csv->gantt-html "/Users/jgorski/Downloads/estimates.csv"))
-
-
-
-    (let [ETE (csv->ETE "test/example.csv")]
-      (random-variables/estimate 10000 ETE)))
+  (let [ETE (csv->ETE "test/example.csv")]
+    (random-variables/estimate 10000 ETE))
 
   ;; => {:mean 22.254977520216386, :std-dev 1.9733462549327425}
   ;; => {:mean 22.29659833024608, :std-dev 1.9838952653790716}
