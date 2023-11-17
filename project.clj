@@ -12,5 +12,4 @@
    [org.clojure/data.priority-map "1.1.0"]
    [org.apache.commons/commons-math3 "3.6.1"]
    ]
-
-  :repl-options {:init-ns pert.core})
+  )

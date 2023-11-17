@@ -1,4 +1,6 @@
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns pert.notebooks.demo
+  {:nextjournal.clerk/visibility {:code :fold}}
   (:require
    [clojure.string :as string]
    [nextjournal.clerk :as clerk]
@@ -33,8 +35,8 @@
     (string/join "\n" (concat ["graph BT"] (map (fn [line] (str "    " line)) mermaid-lines)) )
     ))
 
-;; example from https://book.clerk.vision/
 (def mermaid-viewer
+  ;; example from https://book.clerk.vision/
   {:transform-fn clerk/mark-presented
    :render-fn '(fn [value]
                  (when value
