@@ -17,3 +17,5 @@ pom.xml.asc
 .clj-kondo/
 .lsp/
 *.~undo-tree~
+.clerk
+

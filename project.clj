@@ -6,6 +6,7 @@
   :dependencies
   [[dorothy "0.0.7"]
    [hiccup "2.0.0-RC1"]
+   [io.github.nextjournal/clerk "0.14.919"]
    [org.clojure/clojure "1.10.1"]
    [org.clojure/data.csv "1.0.1"]
    [org.clojure/data.priority-map "1.1.0"]
