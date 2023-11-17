@@ -32,7 +32,7 @@
                               ")"
                               )) edges)
         ]
-    (string/join "\n" (concat ["graph BT"] (map (fn [line] (str "    " line)) mermaid-lines)) )
+    (string/join "\n" (concat ["graph RL"] (map (fn [line] (str "    " line)) mermaid-lines)) )
     ))
 
 (def mermaid-viewer
