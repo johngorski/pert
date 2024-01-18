@@ -64,48 +64,65 @@
         (box [255 255 0]))))
 ;; TODO: replace references in scheduling_test.clj with ones from above
 
-(defn csv->gantt-html
-  [in-csv]
+(defn csv->simulator [workers in-csv]
   (let [rows (scheduling/csv->rows in-csv)
         backlog (scheduling/rows->backlog rows)
-        estimates (scheduling/rows->3pt-estimates rows)
-        simulate #(scheduling/project-record {:backlog backlog
-                                              :estimates estimates
-                                              :workers (into #{} (range 3))})
+        estimates (scheduling/rows->3pt-estimates rows)]
+    #(scheduling/project-record {:backlog backlog
+                                 :estimates estimates
+                                 :workers workers})))
 
-        samples (repeatedly 10000 simulate)
+(defn project-duration
+  "The final end time of all tasks in the provided project simulation."
+  [sim]
+  (reduce max (map :end (vals sim))))
 
-        start-cdf-for (fn [task]
-                        (random-variables/interpolate-cdf
-                         (map (fn [sim] (get-in sim [task :start]))
-                              samples)))
+(comment
+  (reduce max (map :end (vals
+                         ((csv->simulator #{1 2} "test/example.csv")))))
 
-        end-cdf-for (fn [task]
-                      (random-variables/interpolate-cdf
-                       (map (fn [sim] (get-in sim [task :end]))
-                            samples)))
+  (project-duration ((csv->simulator #{1 2} "test/example.csv"))))
 
-        gradient-for  (fn [task]
-                        (task-gradient (start-cdf-for task) (end-cdf-for task)))
+(defn csv->gantt-html
+  ([in-csv] (csv->gantt-html 1 in-csv))
+  ([worker-count in-csv]
+   (let [rows (scheduling/csv->rows in-csv)
+         backlog (scheduling/rows->backlog rows)
+         simulate (csv->simulator (into #{} (range worker-count)) in-csv)
 
-        gradients (into {} (map (fn [{:keys [id]}] [id (gradient-for id)])) backlog)
+         samples (repeatedly 10000 simulate)
 
-        days (range 30) ;; TODO: Get from max of samples. Days may only make sense so far.
+         start-cdf-for (fn [task]
+                         (random-variables/interpolate-cdf
+                          (map (fn [sim] (get-in sim [task :start]))
+                               samples)))
 
-        header [:tr [:th "Day"] (sequence (map (fn [day] [:th (str day)])) days)]
+         end-cdf-for (fn [task]
+                       (random-variables/interpolate-cdf
+                        (map (fn [sim] (get-in sim [task :end]))
+                             samples)))
 
-        task-row (fn [task]
-                   [:tr
-                    [:th task]
-                    (sequence (map (fn [day] (box ((gradients task) day)))) days)])
-        ]
-    (str (hiccup/html {:mode :html}
-                      [:html
-                       [:body
-                        [:table {:cellpadding 1 :cellspacing 0}
-                         header
-                         (map (comp task-row :id) backlog)
-                         ]]]))))
+         gradient-for  (fn [task]
+                         (task-gradient (start-cdf-for task) (end-cdf-for task)))
+
+         gradients (into {} (map (fn [{:keys [id]}] [id (gradient-for id)])) backlog)
+
+         days (range (Math/ceil (reduce max (map project-duration samples))))
+
+         header [:tr [:th "Day"] (sequence (map (fn [day] [:th (str day)])) days)]
+
+         task-row (fn [task]
+                    [:tr
+                     [:th task]
+                     (sequence (map (fn [day] (box ((gradients task) day)))) days)])
+         ]
+     (str (hiccup/html {:mode :html}
+                       [:html
+                        [:body
+                         [:table {:cellpadding 1 :cellspacing 0}
+                          header
+                          (map (comp task-row :id) backlog)
+                          ]]])))))
 
 (defn csv->gantt-bar-html
   [in-csv]

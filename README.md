@@ -3,32 +3,106 @@
 Monte Carlo project estimation based on the US Navy's Program Evaluation and Review Technique
 (PERT) approach.
 
-## Estimates
+## Quickstart
+
+1. Install [leiningen]() (`brew install leiningen` via Homebrew on a Mac).
+2. `lein repl`
+3. Per the prompt which comes up, enter `(start-clerk!)` at the `user=>` prompt.
+4. http://localhost:7777/notebooks/demo.clj will open in a browser.
+5. Navigate to [notebooks/demo.clj](http://localhost:7777/notebooks/demo.clj) on the left.
+6. Enjoy scrolling the report based on the example CSV project data at test/example.csv
+
+Want to make your own? Grab your favorite spreadsheet program that generates CSV files[1] and
+let's go.
+
+Make a new spreadsheet with at least the following column headings (exactly):
+- ID
+- Title
+- Description
+- Dependencies
+- Low
+- Estimate
+- High
+
+You can find an example CSV file in this repository at test/example.csv.
+
+> [1] Note that this "favorite program" can also be a script you write to extract this data from
+> an existing project management data source. Excel, Calc, and Numbers all work fine, too.
+
+### Task breakdown
+
+Each row in the CSV file represents a subtask. The order of the rows is significant: you should
+list your highest-priority tasks highest up. Project simulations will try executing tasks from
+top to bottom, as long as task dependencies (see Dependencies below) are satisfied.
+
+The Title field is a short name for the task. It can be whatever you want. The Description field
+is a longer description of the task. Again, it can be whatever you want.
+
+Tasks *do* need an ID. Alphanumeric IDs work well. Hard requirements: No whitespace, no commas.
+
+### Three-point estimates
+
+Each task uses a *three*-point estimate rather than a single number: a nominal, gut-feel estimate,
+a wildly-optimistic low estimate, and a wildly-pessimistic high estimate. The gut-feel estimate
+should go in the Estimate field. The wildly-optimistic estimate goes in the Low field, and the
+wildly-pessimistic estimate goes in the High field.
+
+The units for these estimates are Days. Decimal values are okay.
+
+### Dependencies
+
+List the IDs of the tasks that must complete before the given task in that task's Dependencies
+field. When a task depends on multiple other tasks, separate the IDs of these dependencies by a
+comma and any amount of whitespace (hence the need to keep commas and whitespace out of task IDs).
+
+This can get tedious if your task breakdown is pretty serial with only a few different parallel
+tracks. One trick to speed this up in a spreadsheet program is to copy and paste relevant ranges
+of the ID column into the Dependencies column as a starting point.
+
+The calculator works by simulating project schedules based on your estimates thousands of times.
+As mentioned in the Three-point estimates section above, the simulator scans your tasks from top
+to bottom in the order of your CSV file when looking for a free task, but it respects dependencies
+by only picking up a free task if it has no incomplete dependencies.
+
+### Number of workers
+
+For purposes of estimation, this tool models workers pretty robotically. One worker = one task.
+No pair programming, interruptions, Brooks' Law, etc.
+
+Exploring the source code at notebooks/demo.clj shows some ways of running project simulations
+with different numbers of workers. The demo report itself shows schedules for the example
+project with one, two, and three workers.
+
+## Rationale
 
 > Measure twice, cut once.
 
-Estimation is a programmer's most begrudging meta-work. Estimation was some of *this*
-programmer's most begrudging meta-work.
+Estimation was some of *this* programmer's most begrudging meta-work.
 
-I wrote this tool as an estimation and scheduling calculator based on the intersection of
-estimation techniques asked for from various team and project managers over the course of my
-career.
+I based this estimation and scheduling calculator on the intersection of estimation techniques
+asked for from various project managers over the course of my career.
 
-The tool is meant to save labor and illustrate nuance in project planning assumptions in
-general and for a given project in particular.
+I hope it helps you, but I built this for me, speeding up my own project estimates and what-if
+scenarios.
 
 ### Uncertainty
 
-The answer to "how long will this take?" is not a single number for most software tasks. Most
-new software projects involve unfamiliar project domains and technologies.
+How can you estimate how long it will take you to do something you've never done before?
+To give a single number, even a best-guess, sets you up for failure.
 
-Programmers can often offer a best-guess at a task duration, but the range of uncertainty
-around this best guess can be fairly large. In general, the larger the best-guess, the larger
-the range of the estimate's uncertainty.
+So what do you say? It'll be ready when it's ready? We can do better.
 
-Capturing and communicating this uncertainty can be challenging and amplify frustrations. In
-particular, it can be unclear when the requested estimate is a best-guess and when the request
-is for a duration which will complete the task with 99% certainty--these are not the same.
+The range of uncertainty around a tasks's best-guess duration can be fairly large. In general,
+the larger the best-guess, the larger the range of the estimate's uncertainty.
+
+Adding a wildly-optimistic low-ball and a wildly-pessimistic high-ball to a best-guess estimate
+keeps us honest without sandbagging or overpromising. In spite of this transparency, you'll still
+be asked for an estimated completion date. 
+
+We could even take these three points and
+model our task as a random variable based on them.
+
+If we could just go off of that one range, we'd be done! If.
 
 ### Task Breakdown
 
@@ -105,13 +179,8 @@ task.
 
 # References
 
-PERT estimation. Looks like there's a nice free series on it to be found at
-https://www.deepfriedbrainproject.com/2010/07/pert-formula.html
-
-Martin, Bob. _The Clean Coder_. Chapter 10: "Estimation"
-
-Apache Commons Math
-
-Clojure
-
-Clerk
+- PERT estimation breakdown at https://www.deepfriedbrainproject.com/2010/07/pert-formula.html
+- Martin, Bob. [_The Clean Coder_](https://www.oreilly.com/library/view/clean-coder-the/9780132542913/). Chapter 10: "Estimation"
+- [Apache Commons Math](https://commons.apache.org/proper/commons-math)
+- [Clojure](https://www.clojure.org)
+- [Clerk](https://github.com/nextjournal/clerk)

@@ -53,5 +53,17 @@
 (clerk/with-viewer mermaid-viewer
   (graph-data->mermaid (scheduling/csv->graph-data example-file)))
 
+;; Schedule projection with one worker
+
 ^{::clerk/viewer clerk/html}
-(gantt/csv->gantt-html example-file)
+(gantt/csv->gantt-html 1 example-file)
+
+;; Schedule projection with two workers
+
+^{::clerk/viewer clerk/html}
+(gantt/csv->gantt-html 2, example-file)
+
+;; Schedule projection with three workers
+
+^{::clerk/viewer clerk/html}
+(gantt/csv->gantt-html 3 example-file)
