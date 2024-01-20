@@ -9,32 +9,42 @@
    [pert.scheduling :as scheduling]
    ))
 
+^::clerk/no-cache
+^{::clerk/visibility {:code :hide}}
 (def example-file "test/example.csv")
 
-^{::clerk/viewer clerk/table}
+^{::clerk/viewer clerk/table
+  ::clerk/visibility {:code :hide}}
 (def rows
   (scheduling/csv->rows example-file))
 
+^{::clerk/visibility {:code :hide :result :hide}}
+(defn mermaid-string [s] (str "\"" (string/escape s {\" "&quot;"}) "\""))
+^{::clerk/visibility {:code :hide :result :hide}}
+(defn mermaid-round [text] (str "(" (mermaid-string text) ")"))
+
+^{::clerk/visibility {:code :hide :result :hide}}
 (defn graph-data->mermaid [graph-data]
   (let [[vertex-entries edges]
         (partition-by (comp map? second) graph-data)
-
         vertices (into {} vertex-entries)
-        mermaid-lines (map (fn [[from to]]
-                             (str
-                              from
-                              "("
-                              (get-in vertices [from :label])
-                              ") --> "
-                              to
-                              "("
-                              (get-in vertices [to :label])
-                              ")"
-                              )) edges)
+        mermaid-lines (concat
+                       (map (fn [[id {:keys [label]}]]
+                              (str id "(\"" label "\")"))
+                            vertex-entries)
+                       (map (fn [[from to]]
+                              (str
+                               from
+                               (mermaid-round (get-in vertices [from :label]))
+                               " --> "
+                               to
+                               (mermaid-round (get-in vertices [to :label]))
+                               )) edges))
         ]
     (string/join "\n" (concat ["graph RL"] (map (fn [line] (str "    " line)) mermaid-lines)) )
     ))
 
+^{::clerk/visibility {:code :hide :result :hide}}
 (def mermaid-viewer
   ;; example from https://book.clerk.vision/
   {:transform-fn clerk/mark-presented
@@ -50,8 +60,11 @@
                                                value
                                                #(set! (.-innerHTML el) %))))}])]))})
 
-(clerk/with-viewer mermaid-viewer
-  (graph-data->mermaid (scheduling/csv->graph-data example-file)))
+^{::clerk/visibility {:code :hide :result :hide}}
+(def dependency-mermaid (graph-data->mermaid (scheduling/csv->graph-data example-file)))
+
+^{::clerk/visibility {:code :hide}}
+(clerk/with-viewer mermaid-viewer dependency-mermaid)
 
 ;; Schedule projection with one worker
 
@@ -67,3 +80,7 @@
 
 ^{::clerk/viewer clerk/html}
 (gantt/csv->gantt-html 3 example-file)
+
+^{::clerk/visibility {:code :hide}
+  ::clerk/viewer clerk/html}
+[:pre dependency-mermaid]

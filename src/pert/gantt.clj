@@ -111,9 +111,14 @@
 
          header [:tr [:th "Day"] (sequence (map (fn [day] [:th (str day)])) days)]
 
+         descriptions (into {}
+                            (map (fn [{:strs [ID Title Description]}]
+                                   [ID {:title Title :description Description}])) rows)
+
          task-row (fn [task]
                     [:tr
-                     [:th task]
+                     [:th {:title (get-in descriptions [task :description])}
+                      (get-in descriptions [task :title] task)]
                      (sequence (map (fn [day] (box ((gradients task) day)))) days)])
          ]
      (str (hiccup/html {:mode :html}
