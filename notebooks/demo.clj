@@ -2,7 +2,6 @@
 (ns pert.notebooks.demo
   {:nextjournal.clerk/visibility {:code :fold}}
   (:require
-   [clojure.string :as string]
    [nextjournal.clerk :as clerk]
    [pert.gantt :as gantt]
    [pert.mermaid :as mermaid]
