@@ -18,4 +18,5 @@ pom.xml.asc
 .lsp/
 *.~undo-tree~
 .clerk
+*.swp
 

@@ -1,13 +1,17 @@
 (ns pert.scheduling-test
   (:require
-   [clojure.data.csv :as csv]
+   ;; [clojure.data.csv :as csv]
    [clojure.java.io :as io]
    [clojure.spec.alpha :as spec]
    [clojure.string :as string]
    [clojure.test :refer :all]
    [hiccup2.core :as hiccup]
+   [pert.csv :as csv]
    [pert.random-variables :as random-variables]
    [pert.scheduling :refer :all]))
+
+;; TODO: Take csv parsing out of scheduling namespace
+;;       Start scheduling functions from backlogs instead of csv files.
 
 (def d 0.001)
 
@@ -127,11 +131,6 @@
                               "ship bear"
                               {:worker 0, :start 12, :end 13}})))))
 
-(defn overlap? [timeline]
-  (some (fn [[previous next]]
-          (< (:start next) (:end previous)))
-        (partition 2 1 (sort-by :start timeline))))
-
 (deftest full-examples
   (let [bear-record (project-record
                      (let [bear-process [["cut fur" #{} 2]
@@ -170,19 +169,6 @@
       (testing "Worker timelines don't overlap"
         (is (not (some overlap? (vals timelines))))))))
 
-(deftest csv-parsing
-  (testing "Dependency cells split as expected"
-    (is (= #{"a" "b" "c" "d" "ef" "g"}) (parse-dependencies ",,a,b  ,c ,   d, ef, g,,,,")))
-  (testing "Empty dependency string means no dependencies"
-    (is (= #{} (parse-dependencies ""))))
-  (testing "Example CSV doc gets expected backlog"
-    (is (= [{:id "a", :deps #{}} {:id "b", :deps #{"a"}} {:id "c", :deps #{}}
-            {:id "d", :deps #{"c"}} {:id "e", :deps #{"d"}} {:id "f", :deps #{}}
-            {:id "g", :deps #{"f"}} {:id "h", :deps #{"e" "b" "g"}}
-            {:id "i", :deps #{"h"}} {:id "j", :deps #{"i"}}]
-           (doall (rows->backlog (csv->rows "test/example.csv"))))))
-  )
-
 (comment
   (with-open [writer (io/writer "test/bear.csv")]
     (csv/write-csv
@@ -201,34 +187,6 @@
              ["dress bear" #{"embroider" "stuff fur" "sew accessories"} 3]
              ["package bear" #{"dress bear"} 1]
              ["ship bear" #{"package bear"} 1]]))))
-
-  (with-open [reader (io/reader "test/example.csv")]
-    (doall
-     (csv/read-csv reader)))
-
-  (let [rows (csv->rows "test/example.csv")
-        backlog (rows->backlog rows)
-        estimates (rows->3pt-estimates rows)
-        simulate #(project-record {:backlog backlog, :estimates estimates, :workers #{"Megan"}})
-        samples (repeatedly 10000 simulate)
-        gradient-for (fn [task]
-                       (random-variables/task-gradient
-                        (random-variables/interpolate-cdf (map (fn [sim] (get-in sim [task :start])) samples))
-                        (random-variables/interpolate-cdf (map (fn [sim] (get-in sim [task :end])) samples))
-                        ))
-        gradients (into {} (map (fn [{:keys [id]}] [id (gradient-for id)])) backlog)
-        days (range 15)
-        header [:tr [:th "Day"] (sequence (map (fn [day] [:th (str day)])) days)]
-        task-row (fn [task] [:tr [:th task] (sequence (map (fn [day] (random-variables/box ((gradients task) day)))) days)])
-        ]
-    (spit "/Users/jgorski/Desktop/gantt.html"
-          (str (hiccup/html {:mode :html}
-                            [:html
-                             [:body
-                              [:table
-                               header
-                               (map (comp task-row :id) backlog)
-                               ]]]))))
 
   (let [ETE (csv->ETE "test/example.csv")]
     (random-variables/estimate 10000 ETE))
@@ -262,3 +220,29 @@
    "g" {:worker "Megan", :start 5.987796192462242, :end 8.508293580469951},
    "h" {:worker "John", :start 8.508293580469951, :end 11.508293580469951},
    "c" {:worker "Megan", :start 0, :end 1.323462834946807}})
+
+(deftest refactoring
+  (testing "examples for refactoring csv->simulator"
+    (is (let [simulation ((csv->simulator #{1 2 3} "test/example.csv"))]
+          (and (spec/valid? :pert.scheduling/projection simulation)
+               (< 0 (count simulation))))))
+  (testing "csv->ETE examples"
+    (is (spec/valid? :pert.scheduling/duration
+                     (random-variables/sample (csv->ETE "test/example.csv"))))
+    ))
+
+(deftest project-helpers
+  (testing "duration sampling"
+    (is (let [backlog (csv/backlog "test/example.csv")
+              durations ((duration-sampler backlog))]
+          (and
+           (= (count backlog) (count durations))
+           (spec/valid? (spec/every-kv :pert.task/id :pert.scheduling/duration)
+                        ((duration-sampler (csv/backlog "test/example.csv"))))))))
+  (testing "simulation stream is all projections"
+    (is (spec/valid? (spec/coll-of :pert.scheduling/projection)
+                     (take 5 (simulations (csv/backlog "test/example.csv") #{1 2})))))
+  (testing "durations"
+    (is (spec/valid? (spec/coll-of (spec/every-kv :pert.task/id :pert.scheduling/duration))
+                     (take 5 (durations (csv/backlog "test/example.csv")))))))
+

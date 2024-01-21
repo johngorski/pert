@@ -1,6 +1,9 @@
 (ns pert.gantt
   (:require
+   [clojure.math :as math]
+   [clojure.string :as string]
    [hiccup2.core :as hiccup]
+   [pert.csv :as csv]
    [pert.random-variables :as random-variables]
    [pert.scheduling :as scheduling]
    ))
@@ -10,8 +13,8 @@
   "Get RGB color values from the chance of the task starting and the chance of it finishing.
   Not started: Red (0xFF0000). In-progress: Yellow (0xFFFF00). Finished: Green (0x00FF00)."
   [chance-started chance-finished]
-  [(int (Math/ceil (* 255 (- 1 chance-finished))))
-   (int (Math/ceil (* 255 chance-started)))
+  [(int (math/ceil (* 255 (- 1 chance-finished))))
+   (int (math/ceil (* 255 chance-started)))
    0])
 
 (defn status-heights
@@ -25,8 +28,10 @@
   Not started = red on top, in-progress = yellow in middle, done = green in remainder."
   [chance-started chance-finished]
   (let [s 18
-        [r-h y-h g-h] (map (fn [x] (int (* s x))) (status-heights chance-started chance-finished))]
-    [:svg {:width s :height s}
+        [r-h y-h g-h] (map (fn [x]
+                             (int (* s x)))
+                           (status-heights chance-started chance-finished))]
+    [:svg {:width s :height s :xmlns "http://www.w3.org/2000/svg"}
      [:rect {:x 0 :y 0 :width s :height g-h
              ;; :style "fill:#ffffff"}] ;; done
              :style "fill:#00ff00"}] ;; done
@@ -46,7 +51,7 @@
     (status->svg (start-cdf t) (finish-cdf t))))
 
 (defn task-gradient
-  "Gradient based on cdfs for a task starting and task finishing."
+  "Color gradient based on cdfs for a task starting and task finishing."
   [start-cdf finish-cdf]
   (fn [t]
     (status->rgb (start-cdf t) (finish-cdf t))))
@@ -55,88 +60,131 @@
   "Hiccup data for a box of color given as RGB vector on [0, 255]."
   [[r g b]]
   (let [s 18]
-    [:td [:svg {:width s :height s}
-          [:rect {:x 0 :y 0 :width s :height s :style (str "fill: rgb(" r "," g "," b ")")}]]]))
-;;  [:td {:style (str "background-color: rgb(" r "," g "," b ")")}])
-
-(comment
-  (str (hiccup/html
-        (box [255 255 0]))))
-;; TODO: replace references in scheduling_test.clj with ones from above
-
-(defn csv->simulator [workers in-csv]
-  (let [rows (scheduling/csv->rows in-csv)
-        backlog (scheduling/rows->backlog rows)
-        estimates (scheduling/rows->3pt-estimates rows)]
-    #(scheduling/project-record {:backlog backlog
-                                 :estimates estimates
-                                 :workers workers})))
+    [:svg {:width s :height s}
+     [:rect {:x 0 :y 0 :width s :height s :style (str "fill: rgb(" r "," g "," b ")")}]]))
 
 (defn project-duration
   "The final end time of all tasks in the provided project simulation."
   [sim]
   (reduce max (map :end (vals sim))))
 
-(comment
-  (reduce max (map :end (vals
-                         ((csv->simulator #{1 2} "test/example.csv")))))
+(defn day-frequencies
+  [samples]
+  (let [ids (keys (first samples))]
+    (into {}
+          (map
+           (fn [id]
+             (let [day-frequencies
+                   (fn [endpoint]
+                     (frequencies
+                      (map
+                       (fn [sample]
+                         (int (math/ceil (get-in sample [id endpoint]))))
+                       samples)))]
+               [id {:start (day-frequencies :start)
+                    :end (day-frequencies :end)}])))
+          ids)))
 
-  (project-duration ((csv->simulator #{1 2} "test/example.csv"))))
+(defn last-day
+  [day-frequencies]
+  (reduce max
+          (mapcat
+           (fn [[_ {:keys [end]}]]
+             (keys end))
+           day-frequencies)))
 
-(defn csv->gantt-html
-  ([in-csv] (csv->gantt-html 1 in-csv))
-  ([worker-count in-csv]
-   (let [rows (scheduling/csv->rows in-csv)
-         backlog (scheduling/rows->backlog rows)
-         simulate (csv->simulator (into #{} (range worker-count)) in-csv)
+(defn cdf
+  "Discrete cumulative distribution function at the bucket level."
+  [histogram buckets]
+  (reductions + (map #(get histogram % 0) buckets)))
 
-         samples (repeatedly 10000 simulate)
+(defn gantt
+  "Get Gantt chart statistic summaries based on the provided project simulations.
+  You know what would be great for that? A map from task ID to parallel sequences
+  of start and end times. Or the histogram data right there.
+  "
+  [samples]
+  (let [task-day-histogram (day-frequencies samples)
+        sample-count (reduce + (-> task-day-histogram first second :start vals))
+        days (range (inc (last-day task-day-histogram)))
+        ]
+    (into {}
+          (map (fn [[id {:keys [start end]}]]
+                 [id (let [started (cdf start days)
+                           finished (cdf end days)]
+                       (map (fn [started-count finished-count]
+                              {:queued (- sample-count started-count)
+                               :in-progress (- started-count finished-count)
+                               :finished finished-count})
+                            started finished))]))
+          (seq task-day-histogram))
+    ))
 
-         start-cdf-for (fn [task]
-                         (random-variables/interpolate-cdf
-                          (map (fn [sim] (get-in sim [task :start]))
-                               samples)))
+(def cell-visuals
+  {:gradient (comp box status->rgb)
+   :bar status->svg})
 
-         end-cdf-for (fn [task]
-                       (random-variables/interpolate-cdf
-                        (map (fn [sim] (get-in sim [task :end]))
-                             samples)))
+(defn hiccup
+  ([backlog data] (hiccup {:cell-visual :gradient} backlog data))
+  ([props backlog data]
+   (let [row (fn [cells] [:tr cells])
+         header (row
+                 (cons [:th "Day"]
+                       (map-indexed (fn [idx _]
+                                      [:th
+                                       ;; TODO: calculate in-progress tasks here
+                                       ;; (let [in-progress
+                                       ;; all ]
+                                       ;; {:title (format "%.1f in-progress tasks"
+                                       ;; (* 1.0 (/ in-progress all)))})
+                                       idx])
+                                    (first (vals data)))))
+         task-row (fn [{:keys [id title description]}]
+                    (row
+                     (cons [:th {:title description} title]
+                           (map
+                            (fn [{:keys [queued in-progress finished]}]
+                              (let [sim-count (+ queued in-progress finished)
+                                    percent (fn [n] (format "%.1f%%" (* 100.0 (/ n sim-count))))]
+                                [:td
+                                 {:title (string/join "\n" [(str (percent queued) " queued")
+                                                            (str (percent in-progress) " in-progress")
+                                                            (str (percent finished) " finished")])}
+                                 ((get cell-visuals (:cell-visual props))
+                                  (/ (+ in-progress finished) sim-count)
+                                  (/ finished sim-count))
+                                 ]))
+                            (get data id))
+                           )))]
+     [:table {:cellpadding 1 :cellspacing 0}
+      header
+      (map (comp task-row) backlog)]
+     )))
 
-         gradient-for  (fn [task]
-                         (task-gradient (start-cdf-for task) (end-cdf-for task)))
+(defn gantt-hiccup
+  ([backlog duration-samples team]
+   (gantt-hiccup {:cell-visual :gradient} backlog duration-samples team))
 
-         gradients (into {} (map (fn [{:keys [id]}] [id (gradient-for id)])) backlog)
+  ([props backlog duration-samples team]
+   (hiccup props
+           backlog
+           (gantt
+            (map (fn [durations]
+                   (scheduling/project backlog durations team))
+                 duration-samples)))))
 
-         days (range (Math/ceil (reduce max (map project-duration samples))))
+(defn gantt-html
+  ([backlog duration-samples team]
+   (gantt-html {:cell-visual :gradient} backlog duration-samples team))
+  ([props backlog duration-samples team]
+   (str (hiccup/html (gantt-hiccup props backlog duration-samples team)))))
 
-         header [:tr [:th "Day"] (sequence (map (fn [day] [:th (str day)])) days)]
-
-         descriptions (into {}
-                            (map (fn [{:strs [ID Title Description]}]
-                                   [ID {:title Title :description Description}])) rows)
-
-         task-row (fn [task]
-                    [:tr
-                     [:th {:title (get-in descriptions [task :description])}
-                      (get-in descriptions [task :title] task)]
-                     (sequence (map (fn [day] (box ((gradients task) day)))) days)])
-         ]
-     (str (hiccup/html {:mode :html}
-                       [:html
-                        [:body
-                         [:table {:cellpadding 1 :cellspacing 0}
-                          header
-                          (map (comp task-row :id) backlog)
-                          ]]])))))
 
 (defn csv->gantt-bar-html
   [in-csv]
-  (let [rows (scheduling/csv->rows in-csv)
-        backlog (scheduling/rows->backlog rows)
-        estimates (scheduling/rows->3pt-estimates rows)
-        simulate #(scheduling/project-record {:backlog backlog
-                                              :estimates estimates
-                                              :workers (into #{} (range 3))})
+  (let [rows (csv/rows in-csv)
+        backlog (csv/backlog in-csv)
+        simulate (scheduling/csv->simulator (into #{} (range 3)) in-csv)
 
         samples (repeatedly 10000 simulate)
 
@@ -171,16 +219,3 @@
                          header
                          (map (comp task-row :id) backlog)
                          ]]]))))
-
-(comment
-  (spit "/Users/jgorski/Desktop/gantt.html"
-        (csv->gantt-html "/Users/jgorski/Downloads/estimates.csv"))
-
-  (spit "/Users/jgorski/Desktop/gantt.html"
-        (csv->gantt-html "test/example.csv"))
-
-  (spit "/Users/jgorski/Desktop/gantt-bar.html"
-        (csv->gantt-bar-html "test/example.csv"))
-
-  )
-

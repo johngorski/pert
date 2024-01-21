@@ -1,0 +1,14 @@
+ID,Title,Description,Dependencies,Low,Estimate,High
+a,Serve burger,,"b, c, d, e",1,2,3
+b,Plate bun,,j,1,2,3
+c,Plate patty,,h,1,2,3
+d,Plate lettuce,,f,1,2,3
+e,Plate tomato,,g,1,2,3
+f,Chop lettuce,,m,1,2,3
+g,Chop tomato,,k,1,2,3
+h,Cook beef,,i,1,2,3
+i,Chop beef,,l,1,2,3
+j,Get bun,,,1,2,3
+k,Get tomato,,,1,2,3
+l,Get beef,,,1,2,3
+m,Get lettuce,,,1,2,3

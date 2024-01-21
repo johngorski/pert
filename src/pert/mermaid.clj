@@ -1,30 +1,27 @@
 (ns pert.mermaid
   (:require
    [clojure.string :as string]
-   [nextjournal.clerk :as clerk]
-   [pert.gantt :as gantt]
-   [pert.random-variables :as random-variables]
-   [pert.scheduling :as scheduling]
    ))
 
 (defn mermaid-string [s] (str "\"" (string/escape s {\" "&quot;"}) "\""))
 (defn mermaid-round [text] (str "(" (mermaid-string text) ")"))
 
-(defn graph-syntax [graph-data]
-  (let [[vertex-entries edges]
-        (partition-by (comp map? second) graph-data)
-        vertices (into {} vertex-entries)
+(defn graph
+  "Mermaid graph syntax for graph defined on tasks from pert.graph namespace."
+  [graph]
+  (let [{:keys [vertices edges]} graph
+        vertex-lookup (into {} (map (fn [v] [(:id v) (dissoc v :id)])) vertices)
         mermaid-lines (concat
                        (map (fn [[id {:keys [label]}]]
                               (str id (mermaid-round label)))
-                            vertex-entries)
+                            vertex-lookup)
                        (map (fn [[from to]]
                               (str
                                from
-                               (mermaid-round (get-in vertices [from :label]))
+                               (mermaid-round (get-in vertex-lookup [from :label]))
                                " --> "
                                to
-                               (mermaid-round (get-in vertices [to :label]))
+                               (mermaid-round (get-in vertex-lookup [to :label]))
                                )) edges))
         ]
     (string/join "\n" (concat ["graph RL"] (map (fn [line] (str "    " line)) mermaid-lines)) )

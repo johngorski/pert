@@ -34,7 +34,9 @@
         std-dev (/ (- pessimistic optimistic) 6)]
     (gaussian mean std-dev)))
 
-(defn combine-with [f]
+(defn combine-with
+  ""
+  [f]
   (fn [& vars]
     (reify
       Variable
@@ -232,24 +234,33 @@
   [xs]
   (let [sorted (into [] (sort xs))
         n (count sorted)
-        idx (fn [a x b] ;; binary search
+        ]
+    (letfn [(idx [a x b] ;; binary search for the last index with value <= x between elements a and b
               (let [m (+ a (quot (- b a) 2))
                     mid-left (sorted m)
                     mid-right (sorted (inc m))]
                 (cond
-                  (= mid-right x) (inc m)
-                  (<= mid-left x mid-right) m
-                  (< x mid-left) (recur a x m)
-                  (<= mid-right x) (recur (inc m) x b)
-                  )
-                )
-              )]
-    (fn [x]
-      (cond
-        (< x (first sorted)) 0
-        (<= (last sorted) x) 1
-        :else (/ (inc (idx 0 x (dec n))) n)
-        ))))
+                  (= mid-right x)
+                  (max (inc m) (idx (inc m) x b))
+
+                  (<= mid-left x mid-right)
+                  m
+
+                  (< x mid-left)
+                  (recur a x m)
+
+                  (<= mid-right x)
+                  (recur (inc m) x b)
+                  )))]
+      (fn [x]
+        (cond
+          (< x (first sorted)) 0
+          (<= (last sorted) x) 1
+
+          :else
+          (/ (inc (idx 0 x (dec n)))
+             n)
+          )))))
 
 (defn status->rgb
   "Get RGB color values from the chance of the task starting and the chance of it finishing.
