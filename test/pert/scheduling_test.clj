@@ -1,6 +1,5 @@
 (ns pert.scheduling-test
   (:require
-   ;; [clojure.data.csv :as csv]
    [clojure.java.io :as io]
    [clojure.spec.alpha :as spec]
    [clojure.string :as string]
@@ -9,9 +8,6 @@
    [pert.csv :as csv]
    [pert.random-variables :as random-variables]
    [pert.scheduling :refer :all]))
-
-;; TODO: Take csv parsing out of scheduling namespace
-;;       Start scheduling functions from backlogs instead of csv files.
 
 (def d 0.001)
 

@@ -8,7 +8,6 @@
    [pert.scheduling :as scheduling]
    ))
 
-;; TODO: replace references in scheduling_test.clj with ones from above
 (defn status->rgb
   "Get RGB color values from the chance of the task starting and the chance of it finishing.
   Not started: Red (0xFF0000). In-progress: Yellow (0xFFFF00). Finished: Green (0x00FF00)."
@@ -49,12 +48,6 @@
   [start-cdf finish-cdf]
   (fn [t]
     (status->svg (start-cdf t) (finish-cdf t))))
-
-(defn task-gradient
-  "Color gradient based on cdfs for a task starting and task finishing."
-  [start-cdf finish-cdf]
-  (fn [t]
-    (status->rgb (start-cdf t) (finish-cdf t))))
 
 (defn box
   "Hiccup data for a box of color given as RGB vector on [0, 255]."
@@ -178,44 +171,3 @@
    (gantt-html {:cell-visual :gradient} backlog duration-samples team))
   ([props backlog duration-samples team]
    (str (hiccup/html (gantt-hiccup props backlog duration-samples team)))))
-
-
-(defn csv->gantt-bar-html
-  [in-csv]
-  (let [rows (csv/rows in-csv)
-        backlog (csv/backlog in-csv)
-        simulate (scheduling/csv->simulator (into #{} (range 3)) in-csv)
-
-        samples (repeatedly 10000 simulate)
-
-        start-cdf-for (fn [task]
-                        (random-variables/interpolate-cdf
-                         (map (fn [sim] (get-in sim [task :start]))
-                              samples)))
-
-        end-cdf-for (fn [task]
-                      (random-variables/interpolate-cdf
-                       (map (fn [sim] (get-in sim [task :end]))
-                            samples)))
-
-        svgs-for (fn [task]
-                   (task-svg (start-cdf-for task) (end-cdf-for task)))
-
-        svgs (into {} (map (fn [{:keys [id]}] [id (svgs-for id)])) backlog)
-
-        days (range 30) ;; TODO: Get from max of samples. Days may only make sense so far.
-
-        header [:tr [:th "Day"] (sequence (map (fn [day] [:th (str day)])) days)]
-
-        task-row (fn [task]
-                   [:tr
-                    [:th task]
-                    (sequence (map (fn [day] [:td ((svgs task) day)])) days)])
-        ]
-    (str (hiccup/html {:mode :html}
-                      [:html
-                       [:body
-                        [:table {:cellpadding 1 :cellspacing 0}
-                         header
-                         (map (comp task-row :id) backlog)
-                         ]]]))))

@@ -149,33 +149,3 @@
    [{:attackers 2, :defenders 0} 219]
    [{:attackers 1, :defenders 4} 156]
    [{:attackers 1, :defenders 5} 63]))
-
-(deftest cumulative-distribution-functions
-  (testing "sample interpolation"
-    (let [cdf (interpolate-cdf [0 50 80 100])]
-      (testing "below min is 0"
-        (is (= 0 (cdf -1))))
-      (testing "over max is 1"
-        (is (= 1 (cdf 101))))
-      (testing "at points"
-        (is (= 1/4 (cdf 0)))
-        (is (= 1/2 (cdf 50)))
-        (is (= 3/4 (cdf 80)))
-        (is (= 1 (cdf 100)))
-        )))
-  (testing "single item cdf is a step function"
-    (is (= 0 ((interpolate-cdf [2]) 1)))
-    (is (= 1 ((interpolate-cdf [2]) 2)))
-    (is (= 1 ((interpolate-cdf [2]) 3)))
-    )
-  (testing "sample with repeats"
-    (is (= 1 ((interpolate-cdf [1 1 1 1 1 1 1 1 1 2]) 2)))
-    (is (= 1 ((interpolate-cdf [1 1 1 1 1 1 1 1 2 2]) 2)))
-    (is (= 9/10 ((interpolate-cdf [1 1 1 1 1 1 1 1 1 2]) 1.5)))
-    (testing "We go to the end of the string of repeated values"
-      (is (= 9/10 ((interpolate-cdf [1 1 1 1 1 1 1 1 1 2]) 1)))
-      (is (= 8/9 ((interpolate-cdf [1 1 1 1 1 1 1 1 2]) 1)))
-      (is (= 7/8 ((interpolate-cdf [1 1 1 1 1 1 1 2]) 1)))
-      )
-    )
-  )
