@@ -7,7 +7,7 @@
 
 (deftest example
   (testing "example file dependencies"
-    (is (= (mermaid/graph (graph/graph (csv/backlog "test/example.csv")))
+    (is (= (mermaid/graph (graph/simplified (csv/backlog "test/example.csv")))
            "graph RL
     d(\"Sew clothes\")
     f(\"Cut accessories\")

@@ -11,7 +11,7 @@
 
 (deftest example
   (testing "example dependency graphviz"
-    (is (= (dot (graph/graph (map csv/task (csv/rows "test/example.csv"))))
+    (is (= (dot (graph/simplified (map csv/task (csv/rows "test/example.csv"))))
            "digraph {
 a [label=\"Cut fur\",tooltip=\"Cut fur to the shape of the needed bear.\"];
 b [label=\"Stuff fur\",tooltip=\"Stuff the cut fur to the right density for the quality of the product.\"];

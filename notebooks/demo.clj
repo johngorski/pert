@@ -14,8 +14,10 @@
 
 ^{::clerk/visibility {:code :hide}}
 ;; ^::clerk/no-cache
-(def example-file "test/example.csv")
-;; (def example-file "test/overcooked-burger.csv")
+#_(java.util.Date.)
+(let [_run-at #inst "2024-03-16T03:40:35.357-00:00"]
+  (def example-file "test/example.csv"))
+  ;; (def example-file "test/overcooked-burger.csv"))
 
 ^{::clerk/visibility {:code :fold :result :hide}}
 (def backlog (csv/backlog example-file))
@@ -40,21 +42,23 @@
    :render-fn mermaid/render-fn})
 
 ^{::clerk/visibility {:code :hide :result :hide}}
-(def dependency-mermaid (mermaid/graph (graph/graph backlog)))
+(def dependency-mermaid (mermaid/graph (graph/simplified backlog)))
 
 ^{::clerk/visibility {:code :hide}}
 (clerk/with-viewer mermaid-viewer dependency-mermaid)
 
 ;; Scheduling projection
 ^{::clerk/visibility {:code :hide :result :hide}}
-(def n 10000)
+(def n 1000)
 ^{::clerk/visibility {:code :hide}}
 (str n " project task duration samples.")
 
 ^{::clerk/visibility {:code :hide :result :hide}}
 ;; ^::clerk/no-cache
-(def duration-samples
-  (take n (scheduling/durations backlog)))
+;; (java.util.Date.)
+(let [_run-at #inst "2024-03-15T06:49:40.223-00:00"]
+  (def duration-samples
+    (take n (scheduling/durations backlog))))
 
 ^{::clerk/visibility {:code :hide :result :hide}}
 (defn team-of [n] (into #{} (range (if (<= 1.0 n) n 1))))

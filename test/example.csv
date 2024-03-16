@@ -8,4 +8,4 @@ f,Cut accessories,Cut ordered bear accessories,,0,1,3
 g,Sew accessories,Attach accessories to the bear,f,0,2,3
 h,Dress bear,Dress bear in custom clothing,"b, e, g",3,3,3
 i,Package bear,Package bear for stackable shipping,h,1,1,1
-j,Ship bear,Transport bear to shipping,i,1,1,1
+j,Ship bear,Transport bear to shipping,"i, e",1,1,1

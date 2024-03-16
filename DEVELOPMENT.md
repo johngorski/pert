@@ -13,29 +13,20 @@ performance optimization.
 
 NEXT:
 - Add in-progress task count per day
-- Profile code for performance bottlenecks
+- Overlay average number of concurrent tasks
+- delegate stats to kixi.stats for cljs, transducer-based performance improvements, and Cauchy distributions
+- Then probably kixi.stats and performance management.
+- Profile code for performance bottlenecks: https://clojure-goes-fast.com/kb/profiling/
 - Include task p95 ETAs based on simulations
+- Move estimate multimethod to an estimate-specific namespace
 - Box and whisker charts for end times - may be easier to separate from current gantt table
+  - kixi.stats for stats
+  - Vega-lite support for box-and-whiskers/other visualizations/visualization grammar
+- Show cumulative distribution visualizations for tasks
 - Continuous gantt visualization (rather than table cell per day)
 - Rows without IDs in the spreadsheet can be comment rows, attached to nothing.
 - Default un-estimated tasks to having estimates via Cauchy distributions and absolute values. Thanks kixi.stats!
-  - Highlight un-estimated tasks in the gantt chart!
-
-Focus: Simulator from backlog, not CSV. (scheduling/simulator backlog) taking workers
-- We have (scheduling/project backlog durations workers)
-- We'd like to get durations out of the estimates. Like, lots of them.
-- Backing schema for gantt charts is a map from IDs to a sequence of day statistics
-
-1. Move estimate multimethod to an estimate-specific namespace
-1. In general, try to replace csv->* functions.
-   - Remaining:
-     - csv->ETE
-     - csv->gantt-bar-html
-1. Then probably kixi.stats and performance management.
-
-Some ideas:
-- delegate stats to kixi.stats for cljs and transducer-based performance improvements
-- Overlay average number of concurrent tasks
+  - Highlight un-estimated tasks in the gantt chart
 - Spreadsheet validation.
   - Task IDs unique
   - All Dependency IDs task IDs
@@ -46,23 +37,22 @@ Some ideas:
   - to table
   - to gantt chart
   - hiccup
-- Project manipulation namespaces
-- Monte Carlo simulation namespaces
-- Random variable namespaces
-- Stats namespaces
-- What if gantt chart tasks were sorted by the last simulated end time
-
-Some namespaces:
-pert.core             ;; ??
-pert.csv              ;; CSV parsing
-pert.estimates        ;; Mapping of estimates to random variables
-pert.gantt            ;; Gantt chart presentation
-pert.graph            ;; Graph functions shared. DRY'd up graphviz + mermaid
-pert.graphviz         ;; Graphviz presentation
-pert.mermaid          ;; Mermaid diagram presentation
-pert.random_variables ;; Random variable modeling
-pert.scheduling       ;; Hindcasting/simulation of project schedules
-pert.task             ;; Specs/protocols/etc. for tasks and dependencies
+- Other project necessities
+  - Sequence diagram from spreadsheet (from message to)
+  - Dataflow diagram from spreadsheet (from message to)
+  - Link task breakdown to components in data flow diagram needing change/implementation
+  - STATUS REPORTING
+    - Multiple sheets of project estimates over time, for review and tracking
+    - Status fields in backlog spreadsheet to report when tasks started/ended
+  - Ingesting task breakdown data externally
+    - CSV can implement the protocol
+    - Calls to issue management web services would be another implementation
+    - Caching can be quite helpful in both cases
+- Editor via react + re-frame
+- Make cell tooltips sensitive to the number of project simulations:
+  - Percentages don't make any sense for < 100 simulations, show fractions
+- Make task dependency graphs sensitive to depth and breadth
+  - Find/implement a git commit log-style visualization to illustrate task dependencies compactly.
 
 ## Perf data
 
@@ -99,6 +89,7 @@ Cool. A solid savings, then.
 Can we do better? Probably.
 Was this the best place to invest? Probably not.
 Let's check a profiler next, that's the real test.
+https://clojure-goes-fast.com/kb/profiling/
 
 Well okay, one last check before the profiler: Use (time form) from the repl.
 

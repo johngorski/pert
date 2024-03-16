@@ -37,7 +37,7 @@
                  {:id "g", :deps #{"f"}}
                  {:id "h", :deps #{"e" "b" "g"}}
                  {:id "i", :deps #{"h"}}
-                 {:id "j", :deps #{"i"}})
+                 {:id "j", :deps #{"i" "e"}})
                (sequence
                 (comp
                  (map task)
@@ -99,7 +99,7 @@
              {:id "i", :title "Package bear", :description "Package bear for stackable shipping",
               :deps #{"h"}, :estimate [:pert-3pt 1 1 1]}
              {:id "j", :title "Ship bear", :description "Transport bear to shipping",
-              :deps #{"i"}, :estimate [:pert-3pt 1 1 1]})
+              :deps #{"i" "e"}, :estimate [:pert-3pt 1 1 1]})
            ))))
 
 
