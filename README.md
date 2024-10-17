@@ -177,6 +177,15 @@ task.
 
 ## Usage
 
+> When will this be done?
+
+Who's asking?
+
+- For project stakeholders: Report an estimated completion date of the 95th percentile of the last completed task in the project.
+- For you: Aim for the 50th percentile.
+
+Project sponsors need to know when work will finish. You need a goal against which to deliver and to track against your improvements in delivery and estimation.
+
 # References
 
 - PERT estimation breakdown at https://www.deepfriedbrainproject.com/2010/07/pert-formula.html
