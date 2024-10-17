@@ -10,6 +10,7 @@
    [pert.graph :as graph]
    [pert.mermaid :as mermaid]
    [pert.scheduling :as scheduling]
+   [pert.task :as t]
    ))
 
 ^{::clerk/visibility {:code :hide}}
@@ -25,14 +26,16 @@
 ^{::clerk/viewer clerk/table
   ::clerk/visibility {:code :hide}}
 (map (fn [task]
-       (sets/rename-keys
-        task
-        {:id "ID"
-         :title "Title"
-         :description "Description"
-         :deps "Dependencies"
-         :estimate "Estimate"
-         }))
+       (let [renamed (sets/rename-keys
+                      task
+                      {:id "ID"
+                       :title "Title"
+                       :description "Description"
+                       :deps "Dependencies"
+                       :estimate "Estimate"
+                       })]
+         (assoc renamed "Title" (t/title-with-status task))
+         ))
      backlog)
 
 ^{::clerk/visibility {:code :hide :result :hide}}

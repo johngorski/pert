@@ -16,13 +16,40 @@
 (spec/def ::deps
   (spec/and set? (spec/coll-of ::id)))
 
+(defn date-str?
+  "Really there's more to it than just being a string, but I'd rather borrow than build that."
+  [s]
+  (string? s))
+
+(spec/def ::started date-str?)
+(spec/def ::finished date-str?)
+
+(def states #{:to-do :in-progress :done})
+
 (spec/def ::task
   (spec/and
    (spec/keys
     :req-un [::id ::title ::deps]
-    :opt-un [::description])
+    :opt-un [::description ::started ::finished])
    (fn [{:keys [id deps]}]
      (not (deps id)))))
+
+(defn status [task]
+  (let [{:keys [started finished]} task]
+    (if started
+      (if finished
+        :done
+        :in-progress)
+      :to-do)))
+
+(defn status-symbol [status]
+  ({:to-do "📋"
+    :in-progress "🔧"
+    :done "✅"
+    } status))
+
+(defn title-with-status [task]
+  (str (status-symbol (status task)) " " (:title task)))
 
 ;; - estimate: one of available estimate specs. Multi-specs might be the ideal here.
 

@@ -1,14 +1,17 @@
 (ns pert.graph
   (:require
    [clojure.set :as sets]
+   [pert.task :as t]
    ))
 
 (defn vertex
   [task]
-  (-> task
-      (select-keys [:id :title :description])
-      (sets/rename-keys {:title :label, :description :tooltip})
-      ))
+  (let [label (t/title-with-status task)]
+    (-> task
+        (select-keys [:id :title :description])
+        (sets/rename-keys {:title :label, :description :tooltip})
+        (assoc :label label)
+        )))
 
 (defn edges
   "Set of directed edges from a task to the tasks it depends on, by ID"

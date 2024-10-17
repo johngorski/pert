@@ -70,6 +70,8 @@
    "Estimate"           :nom         ;; opt
    "High"               :hi          ;; opt
    "Standard Deviation" :std-dev     ;; opt
+   "Started"            :started     ;; opt
+   "Finished"           :finished    ;; opt
    })
 
 (defn parse-dependencies
@@ -90,7 +92,7 @@
          data (sets/rename-keys row column-mapper)
          estimation (estimations (:estimation data))
          ]
-     (-> (select-keys data [:id :title :description :deps])
+     (-> (select-keys data [:id :title :description :deps :started :finished])
          (update :deps parse-dependencies)
          (assoc :estimate (estimate estimation data)))
      )))
