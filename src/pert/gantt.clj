@@ -135,12 +135,14 @@
          task-row (fn [{:keys [id title description]}]
                     (row
                      (cons [:th {:title description} title]
-                           (map
-                            (fn [{:keys [queued in-progress finished]}]
+                           (map-indexed
+                            (fn [idx {:keys [queued in-progress finished]}]
                               (let [sim-count (+ queued in-progress finished)
                                     percent (fn [n] (format "%.1f%%" (* 100.0 (/ n sim-count))))]
                                 [:td
-                                 {:title (string/join "\n" [(str (percent queued) " queued")
+                                 {:title (string/join "\n" [title
+                                                            (str "Day " idx)
+                                                            (str (percent queued) " queued")
                                                             (str (percent in-progress) " in-progress")
                                                             (str (percent finished) " finished")])}
                                  ((get cell-visuals (:cell-visual props))

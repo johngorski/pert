@@ -9,6 +9,7 @@
    [pert.gantt :as gantt]
    [pert.graph :as graph]
    [pert.mermaid :as mermaid]
+   [pert.report :as report]
    [pert.scheduling :as scheduling]
    [pert.task :as t]
    ))
@@ -30,6 +31,8 @@
                       task
                       {:id "ID"
                        :title "Title"
+                       :started "Started"
+                       :finished "Finished"
                        :description "Description"
                        :deps "Dependencies"
                        :estimate "Estimate"
@@ -38,6 +41,10 @@
          ))
      backlog)
 
+^{::clerk/viewer (comp clerk/table clerk/use-headers)
+  ::clerk/visibility {:code :hide}}
+(report/status-report backlog)
+
 ^{::clerk/visibility {:code :hide :result :hide}}
 (def mermaid-viewer
   ;; example from https://book.clerk.vision/
@@ -45,7 +52,7 @@
    :render-fn mermaid/render-fn})
 
 ^{::clerk/visibility {:code :hide :result :hide}}
-(def dependency-mermaid (mermaid/graph (graph/simplified backlog)))
+(def dependency-mermaid (mermaid/graph (graph/simplified {:include-status? true} backlog)))
 
 ^{::clerk/visibility {:code :hide}}
 (clerk/with-viewer mermaid-viewer dependency-mermaid)

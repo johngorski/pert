@@ -4,14 +4,27 @@
    [pert.task :as t]
    ))
 
+(def default-graph-props {})
+
 (defn vertex
-  [task]
-  (let [label (t/title-with-status task)]
-    (-> task
-        (select-keys [:id :title :description])
-        (sets/rename-keys {:title :label, :description :tooltip})
-        (assoc :label label)
-        )))
+  ([task] (vertex default-graph-props task))
+  ([props task]
+   (let [{:keys [include-status?]} (merge default-graph-props props)
+         label ((if include-status? t/title-with-status :title) task)]
+     (-> task
+         (select-keys [:id :title :description])
+         (sets/rename-keys {:title :label, :description :tooltip})
+         (assoc :label label)
+         ))))
+
+(defn vertices
+  ([tasks]
+   (vertex default-graph-props tasks))
+
+  ([props tasks]
+   (map (fn [task]
+          (vertex props task))
+        tasks)))
 
 (defn edges
   "Set of directed edges from a task to the tasks it depends on, by ID"
@@ -22,14 +35,11 @@
         ))
 
 (defn graph
-  ;; A thought: Do we remove redundant dependency edges?
-  ;; e.g. can we simplify #{[a b] [a c] [b c]} to #{[a b] [b c]}?
-  ;; Yes: This is called a Transitive Reduction.
-  ;; See (simplified).
-  [tasks]
-  {:vertices (map vertex tasks)
-   :edges (reduce sets/union (map edges tasks))
-   })
+  ([tasks] (graph default-graph-props tasks))
+  ([props tasks]
+   {:vertices (vertices props tasks)
+    :edges (reduce sets/union (map edges tasks))
+    }))
 
 (defn sort-topological
   "Topological sort: https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm.
@@ -110,12 +120,13 @@
 (defn simplified
   "Simplify the project dependency graph by removing redundant edges.
   If A depends on B and C, and B depends on C, we can remove the explicit dependency A has on C."
-  [tasks]
-  {:vertices (map vertex tasks)
-   :edges (into #{}
-                (mapcat (fn [[id deps]]
-                          (map (fn [dep]
-                                 [id dep])
-                               deps)))
-                (transitive-reduction (dependencies tasks)))
-   })
+  ([tasks] (simplified default-graph-props tasks))
+  ([props tasks]
+   {:vertices (vertices props tasks)
+    :edges (into #{}
+                 (mapcat (fn [[id deps]]
+                           (map (fn [dep]
+                                  [id dep])
+                                deps)))
+                 (transitive-reduction (dependencies tasks)))
+    }))

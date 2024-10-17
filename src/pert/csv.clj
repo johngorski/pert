@@ -83,6 +83,21 @@
          (string/split (string/trim (or s ""))
                        separator))))
 
+(defn dissoc-empty
+  "Remove k from m when it holds merely an empty string."
+  [m k]
+  (if (and (m k)
+           (empty? (string/trim (m k))))
+    (dissoc m k)
+    m))
+
+(comment
+  (dissoc-empty {:started ""} :started)
+  ;; => {}
+  (dissoc-empty {:started "1/1/2000"} :started)
+  ;; => {:started "1/1/2000"}
+  ())
+
 (defn task
   "Project task defined by the given row.
   id, title, description, deps, estimate"
@@ -93,6 +108,8 @@
          estimation (estimations (:estimation data))
          ]
      (-> (select-keys data [:id :title :description :deps :started :finished])
+         (dissoc-empty :started)
+         (dissoc-empty :finished)
          (update :deps parse-dependencies)
          (assoc :estimate (estimate estimation data)))
      )))

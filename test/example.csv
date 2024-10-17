@@ -1,11 +1,11 @@
-ID,Title,Description,Dependencies,Low,Estimate,High
-a,Cut fur,Cut fur to the shape of the needed bear.,,1,2,4
-b,Stuff fur,Stuff the cut fur to the right density for the quality of the product.,a,4,6,13
-c,Cut cloth,Cut cloth for the bear’s size,,1,2,4
-d,Sew clothes,Sew cloth into bear clothing,c,1,2,6
-e,Embroider,Embroider custom name and message on the bear,d,2,2,2
-f,Cut accessories,Cut ordered bear accessories,,0,1,3
-g,Sew accessories,Attach accessories to the bear,f,0,2,3
-h,Dress bear,Dress bear in custom clothing,"b, e, g",3,3,3
-i,Package bear,Package bear for stackable shipping,h,1,1,1
-j,Ship bear,Transport bear to shipping,"i, e",1,1,1
+ID,Title,Description,Dependencies,Started,Finished,Low,Estimate,High
+a,Cut fur,Cut fur to the shape of the needed bear.,,1/1/2020,1/3/2020,1,2,4
+b,Stuff fur,Stuff the cut fur to the right density for the quality of the product.,a,1/3/2020,1/14/2020,4,6,13
+c,Cut cloth,Cut cloth for the bear’s size,,1/14/2020,,1,2,4
+d,Sew clothes,Sew cloth into bear clothing,c,,,1,2,6
+e,Embroider,Embroider custom name and message on the bear,d,,,2,2,2
+f,Cut accessories,Cut ordered bear accessories,,,,0,1,3
+g,Sew accessories,Attach accessories to the bear,f,,,0,2,3
+h,Dress bear,Dress bear in custom clothing,"b, e, g",,,3,3,3
+i,Package bear,Package bear for stackable shipping,h,,,1,1,1
+j,Ship bear,Transport bear to shipping,"i, e",,,1,1,1

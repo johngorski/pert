@@ -91,10 +91,11 @@
         (is (= reduced (transitive-reduction reduced))))))
   (testing "simplification"
     (testing "honors transitive reduction"
-      (is (= {:vertices [{:id :a} {:id :b} {:id :c} {:id :d}]
+      (is (= {:vertices [:a :b :c :d]
               :edges #{[:c :d] [:a :b] [:b :d] [:a :c]}}
-             (simplified [{:id :a :deps #{:b :c :d}}
-                          {:id :b :deps #{:d}}
-                          {:id :c :deps #{:d}}
-                          {:id :d :deps #{}}
-                          ]))))))
+             (-> (simplified [{:id :a :deps #{:b :c :d}}
+                              {:id :b :deps #{:d}}
+                              {:id :c :deps #{:d}}
+                              {:id :d :deps #{}}
+                              ])
+                 (update :vertices #(map :id %))))))))
