@@ -6,15 +6,15 @@
    [clojure.set :as sets]
    [clojure.spec.alpha :as spec]
    [clojure.string :as string]
-   [pert.task]
-   ))
+   [pert.task])
+  (:import (org.apache.commons.io.input BOMInputStream)))
 
 (defn rows
   "Right so maybe not \"rows,\" but maybe task data? To Tasks (since everything is data)?
   That's kind of what a row is anyway, we just don't have any definition around it.
   That's what specs are for, right?"
   [filepath]
-  (with-open [reader (io/reader filepath)]
+  (with-open [reader (io/reader (-> filepath io/input-stream BOMInputStream. io/reader))]
     (let [rows (csv/read-csv reader)]
       (into
        []
