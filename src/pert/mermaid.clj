@@ -3,7 +3,13 @@
    [clojure.string :as string]
    ))
 
-(defn mermaid-string [s] (str "\"" (string/escape s {\" "&quot;"}) "\""))
+(defn mermaid-string [s]
+  (str "\""
+       (string/escape (or s "") {\" "&quot;"
+                                 ;; \- "&#8208;"
+                                 })
+       "\""))
+
 (defn mermaid-round [text] (str "(" (mermaid-string text) ")"))
 
 (defn mermaid-graph-direction [from to]

@@ -55,7 +55,9 @@
                            g)
            satisfied-set (set satisfied)]
        (when (empty? satisfied-set)
-         (throw (ex-info "Cycle detected in graph" {:order order :graph g})))
+         (throw (ex-info (format "Cycle detected in task graph. No free tasks among the following: %s"
+                                 (into [] (map first) g))
+                         {:order order :graph g})))
        (recur (sequence (comp
                          (remove (comp satisfied-set first))
                          (map (fn [[id deps]]

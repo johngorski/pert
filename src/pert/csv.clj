@@ -124,7 +124,7 @@
    (sequence
     (comp
      (map task)
-     (remove #(empty? (:id %))))
+     (remove #(string/blank? (:id %))))
     (rows csv-file)
     )))
 
