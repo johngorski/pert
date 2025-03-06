@@ -12,6 +12,11 @@ performance optimization.
 
 
 NEXT:
+- Read Excel files (Docjure to extract rows could be a great candidate)
+- Write out project with serial re-numbered task IDs (helpful for re-mapping from GUIDs/external URL IDs)
+- Compact task dependency view, inspired by git commit diagrams
+- Zero-out task estimates for completed items
+- Workday tooltips over project-days
 - Add in-progress task count per day
 - Overlay average number of concurrent tasks
 - delegate stats to kixi.stats for cljs, transducer-based performance improvements, and Cauchy distributions
