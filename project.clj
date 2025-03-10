@@ -5,6 +5,7 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies
   [[commons-io/commons-io "2.16.1"]
+   [dk.ative/docjure "1.21.0"]
    [dorothy "0.0.7"]
    [hiccup "2.0.0-RC1"]
    [io.github.nextjournal/clerk "0.14.919"]

@@ -1,11 +1,9 @@
 (ns pert.csv
   (:require
    [clojure.data.csv :as csv]
-   [clojure.edn :as edn]
    [clojure.java.io :as io]
-   [clojure.set :as sets]
    [clojure.spec.alpha :as spec]
-   [clojure.string :as string]
+   [pert.spreadsheet :as spreadsheet]
    [pert.task])
   (:import (org.apache.commons.io.input BOMInputStream)))
 
@@ -15,104 +13,26 @@
   That's what specs are for, right?"
   [filepath]
   (with-open [reader (io/reader (-> filepath io/input-stream BOMInputStream. io/reader))]
-    (let [rows (csv/read-csv reader)]
-      (into
-       []
-       (doall
-        (map zipmap
-             (repeat (first rows))
-             (rest rows)))))))
+    (spreadsheet/rows (csv/read-csv reader))))
 
-(def estimations
-  {nil :pert-3pt ;; TODO: Make this [:combine-with math/abs :cauchy]
-   "3-point" :pert-3pt
-   "certain" :definitely
-   "gaussian" :gaussian
-   "3-point gaussian" :pert-gauss
-   "even" :uniform
-   })
 
-(defmulti estimate
-  "TODO: Parse estimates from CSV row. Make methods based on the estimation type."
-  ;; see random-variables/construct methods
-  ;; Also worth spec'ing these
-  (fn [type props] type))
+;; TODO: Migrate this to spreadsheet namespace, since this is valid for anything that starts with
+;; rows, e.g. Excel or TSV files.
 
-(defn- num [s] (edn/read-string s))
-
-(defmethod estimate :definitely
-  [_ {:keys [nom]}]
-  [:definitely (num nom)])
-
-(defmethod estimate :gaussian
-  [_ {:keys [nom std-dev]}]
-  [:gaussian (num nom) (num std-dev)])
-
-(defmethod estimate :pert-3pt
-  [_ {:keys [lo nom hi]}]
-  [:pert-3pt (num lo) (num nom) (num hi)])
-
-(defmethod estimate :pert-gauss
-  [_ {:keys [lo nom hi]}]
-  [:pert (num lo) (num nom) (num hi)])
-
-(defmethod estimate :uniform
-  [_ {:keys [lo hi]}]
-  [:uniform (num lo) (num hi)])
-
-(def default-task-columns
-  {"ID"                 :id          ;; req
-   "Title"              :title       ;; req
-   "Description"        :description ;; opt
-   "Dependencies"       :deps        ;; opt
-   "Estimation"         :estimation  ;; opt
-   "Low"                :lo          ;; opt
-   "Estimate"           :nom         ;; opt
-   "High"               :hi          ;; opt
-   "Standard Deviation" :std-dev     ;; opt
-   "Started"            :started     ;; opt
-   "Finished"           :finished    ;; opt
-   })
 
 (defn parse-dependencies
   "Parse dependency cell into set of dependency IDs."
-  ([s] (parse-dependencies #"\s*,\s*" s))
+  ([s] (spreadsheet/parse-dependencies #"\s*,\s*" s))
   ([separator s]
-   (into #{}
-         (filter not-empty)
-         (string/split (string/trim (or s ""))
-                       separator))))
+   (spreadsheet/parse-dependencies separator s)))
 
-(defn dissoc-empty
-  "Remove k from m when it holds merely an empty string."
-  [m k]
-  (if (and (m k)
-           (empty? (string/trim (m k))))
-    (dissoc m k)
-    m))
-
-(comment
-  (dissoc-empty {:started ""} :started)
-  ;; => {}
-  (dissoc-empty {:started "1/1/2000"} :started)
-  ;; => {:started "1/1/2000"}
-  ())
 
 (defn task
   "Project task defined by the given row.
   id, title, description, deps, estimate"
-  ([row] (task {} row))
+  ([row] (spreadsheet/task {} row))
   ([column-mapper-overrides row]
-   (let [column-mapper (merge default-task-columns column-mapper-overrides)
-         data (sets/rename-keys row column-mapper)
-         estimation (estimations (:estimation data))
-         ]
-     (-> (select-keys data [:id :title :description :deps :started :finished])
-         (dissoc-empty :started)
-         (dissoc-empty :finished)
-         (update :deps parse-dependencies)
-         (assoc :estimate (estimate estimation data)))
-     )))
+   (spreadsheet/task column-mapper-overrides row)))
 
 (spec/fdef task
   :ret :pert.task/task)
@@ -121,12 +41,8 @@
   "Task backlog from the provided CSV file."
   ([csv-file] (backlog {} csv-file))
   ([column-overrides csv-file]
-   (sequence
-    (comp
-     (map task)
-     (remove #(string/blank? (:id %))))
-    (rows csv-file)
-    )))
+   (spreadsheet/backlog column-overrides (rows csv-file))))
+
 
 (spec/fdef backlog
   :ret :pert.task/backlog)
