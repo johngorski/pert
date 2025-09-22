@@ -102,3 +102,65 @@
 ^{::clerk/visibility {:code :hide}
   ::clerk/viewer clerk/html}
 [:pre dependency-mermaid]
+
+
+(defn estimate-view [task]
+  (let [{:keys [id title estimate description]} task
+        [_ lo med high] estimate]
+    {"ID" id
+     "Title" title
+     ;;  "Description" description
+     "Low" lo
+     "Estimate" med
+     "High" high}))
+
+
+;; estimates-table
+(clerk/with-viewer
+  clerk/table
+  (map estimate-view backlog))
+
+
+(def task-completion-day-data
+  (gantt/gantt-data backlog duration-samples (team-of 1)))
+
+
+(def finishing-threshold 0.97)
+
+
+(defn simulations-finished [{:keys [finished] :as sims}]
+  (let [total (apply + (vals sims))]
+    (/ finished total)))
+
+
+(defn day-finished [task-progress]
+  (first ;; key of key/value pair
+   (first ;; datum over threshold
+    (sequence
+     (comp
+      (map simulations-finished)
+      (map-indexed (fn [idx finished-ratio]
+                     [idx finished-ratio]))
+      (filter (fn [[_ ratio]] (< finishing-threshold ratio))))
+     task-progress))))
+
+
+(def task-completion-days
+  (into {}
+        (map (fn [[task-id sim-counts]]
+               [task-id (day-finished sim-counts)]))
+        task-completion-day-data))
+
+
+;; Project day on which to expect task completion
+
+(clerk/with-viewer
+  clerk/table
+  (map (fn [task]
+         {"ETE" (get task-completion-days (:id task))
+          "ID" (:id task)
+          "Title" (t/title-with-status task) ;; (:title task)
+          "Started" (get task :started "")
+          "Finished" (get task :finished "")})
+       backlog))
+

@@ -36,11 +36,11 @@
 
 (defn status [task]
   (let [{:keys [started finished]} task]
-    (if started
-      (if finished
-        :done
-        :in-progress)
-      :to-do)))
+    (if finished
+      :done
+      (if started
+        :in-progress
+        :to-do))))
 
 (defn status-symbol [status]
   ({:to-do "📋"

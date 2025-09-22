@@ -156,6 +156,16 @@
       (map (comp task-row) backlog)]
      )))
 
+
+(defn gantt-data
+  "Data for project completion days. TODO: better name for this function, use this in gantt-hiccup"
+  [backlog duration-samples team]
+  (gantt
+   (map (fn [durations]
+          (scheduling/project backlog durations team))
+        duration-samples)))
+
+
 (defn gantt-hiccup
   ([backlog duration-samples team]
    (gantt-hiccup {:cell-visual :gradient} backlog duration-samples team))

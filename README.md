@@ -193,3 +193,4 @@ Project sponsors need to know when work will finish. You need a goal against whi
 - [Apache Commons Math](https://commons.apache.org/proper/commons-math)
 - [Clojure](https://www.clojure.org)
 - [Clerk](https://github.com/nextjournal/clerk)
+- [Monte Carlo quantile estimation](https://web.njit.edu/~marvin/papers/qtut-r2.pdf)
