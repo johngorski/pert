@@ -92,12 +92,12 @@
 ;; Schedule projection with two workers
 ^{::clerk/viewer clerk/html}
 ^::clerk/no-cache
-(gantt/gantt-html {:cell-visual :gradient} backlog duration-samples (team-of 2))
+(gantt/gantt-html {:cell-visual :bar} backlog duration-samples (team-of 2))
 
 ;; Schedule projection with three workers
 ^{::clerk/viewer clerk/html}
 ^::clerk/no-cache
-(gantt/gantt-html {:cell-visual :gradient} backlog duration-samples (team-of 3))
+(gantt/gantt-html {:cell-visual :bar} backlog duration-samples (team-of 3))
 
 ^{::clerk/visibility {:code :hide}
   ::clerk/viewer clerk/html}
@@ -159,8 +159,9 @@
   (map (fn [task]
          {"ETE" (get task-completion-days (:id task))
           "ID" (:id task)
-          "Title" (t/title-with-status task) ;; (:title task)
-          "Started" (get task :started "")
-          "Finished" (get task :finished "")})
+          "Title" (t/title-with-status task)
+          "Started" (or (:started task) "")
+          "Finished" (or (:finished task) "")
+          })
        backlog))
 

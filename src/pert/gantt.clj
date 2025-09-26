@@ -159,11 +159,11 @@
 
 (defn gantt-data
   "Data for project completion days. TODO: better name for this function, use this in gantt-hiccup"
-  [backlog duration-samples team]
+  [backlog project-samples team]
   (gantt
-   (map (fn [durations]
-          (scheduling/project backlog durations team))
-        duration-samples)))
+   (map (fn [task-durations]
+          (scheduling/project backlog task-durations team))
+        project-samples)))
 
 
 (defn gantt-hiccup
