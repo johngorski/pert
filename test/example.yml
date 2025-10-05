@@ -1,0 +1,92 @@
+Breakdown:
+  Tasks:
+  - Ship bear:
+    - Dress bear:
+      - Stuff fur:
+        - Cut fur
+      - Embroider:
+        - Cut cloth
+        - Sew clothes
+      - Sew accessories:
+        - Cut accessories
+    - Package bear
+  Parallel:
+  - Embroider
+  - Sew accessories
+  - Stuff fur
+Details:
+  Ship bear:
+    Description: Transport bear to shipping
+    Estimate:
+      Type: 3-point
+      Low: 1
+      Estimate: 1
+      High: 1
+  Dress bear:
+    Description: Dress bear in custom clothing
+    Estimate:
+      Type: 3-point
+      Low: 3
+      Estimate: 3
+      High: 3
+  Embroider:
+    Description: Embroider custom name and message on the bear
+    Estimate:
+      Type: 3-point
+      Low: 2
+      Estimate: 2
+      High: 2
+  Cut cloth:
+    Description: Cut cloth for the bear's size
+    Started: 1/14/2020
+    Estimate:
+      Type: 3-point
+      Low: 1
+      Estimate: 2
+      High: 4
+  Sew clothes:
+    Description: Sew cloth into bear clothing
+    Estimate:
+      Type: 3-point
+      Low: 1
+      Estimate: 2
+      High: 6
+  Sew accessories:
+    Description: Attach accessories to the bear
+    Estimate:
+      Type: 3-point
+      Low: 0
+      Estimate: 2
+      High: 3
+  Cut accessories:
+    Description: Cut ordered bear accessories
+    Estimate:
+      Type: 3-point
+      Low: 0
+      Estimate: 1
+      High: 3
+  Stuff fur:
+    Description: Stuff the cut fur to the right density for the quality of the product.
+    Started: 1/3/2020
+    Finished: 1/14/2020
+    Estimate:
+      Type: 3-point
+      Low: 4
+      Estimate: 6
+      High: 13
+  Cut fur:
+    Description: Cut fur to the shape of the needed bear.
+    Started: 1/1/2020
+    Finished: 1/3/2020
+    Estimate:
+      Type: 3-point
+      Low: 1
+      Estimate: 2
+      High: 4
+  Package bear:
+    Description: Package bear for stackable shipping
+    Estimate:
+      Type: 3-point
+      Low: 1
+      Estimate: 1
+      High: 1

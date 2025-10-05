@@ -20,4 +20,5 @@ pom.xml.asc
 .clerk
 *.swp
 /.cpcache
+/.claude
 
