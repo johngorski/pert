@@ -4,7 +4,8 @@
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies
-  [[commons-io/commons-io "2.16.1"]
+  [[clj-commons/clj-yaml "1.0.29"]
+   [commons-io/commons-io "2.16.1"]
    [dk.ative/docjure "1.21.0"]
    [dorothy "0.0.7"]
    [hiccup "2.0.0-RC1"]
