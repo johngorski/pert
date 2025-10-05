@@ -14,6 +14,7 @@
    [pert.task :as t]
    ))
 
+
 ^{::clerk/visibility {:code :hide}}
 ;; ^::clerk/no-cache
 (let [_run-at #inst "2024-03-16T03:40:35.357-00:00"]
@@ -156,12 +157,15 @@
 
 (clerk/with-viewer
   clerk/table
-  (map (fn [task]
-         {"ETE" (get task-completion-days (:id task))
-          "ID" (:id task)
-          "Title" (t/title-with-status task)
-          "Started" (or (:started task) "")
-          "Finished" (or (:finished task) "")
-          })
-       backlog))
-
+  (let [start (scheduling/parse-date "2020-01-01")]
+    (map (fn [task]
+           (let [ete (get task-completion-days (:id task))
+                 eta (scheduling/workday start ete)]
+             {;; "ETE" (get task-completion-days (:id task))
+              ;; "ID" (:id task)
+              "Task" (t/title-with-status task)
+              "ETA" (scheduling/yyyy-MM-dd eta)
+              "Started" (or (some-> (:started task) scheduling/yyyy-MM-dd) "")
+              "Finished" (or (some-> (:finished task) scheduling/yyyy-MM-dd) "")
+              }))
+         backlog)))

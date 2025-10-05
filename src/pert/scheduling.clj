@@ -12,7 +12,13 @@
    [pert.graph :as graph]
    [pert.graphviz :as graphviz]
    [pert.random-variables :as random-variables]
-   ))
+   )
+  (:import
+   (java.text DateFormat)
+   (java.time DayOfWeek
+              LocalDate
+              ZoneId)
+   (java.time.format DateTimeFormatter)))
 
 ;; Why find a closed form for the random variables representing schedule
 ;; estimates when you can simulate instead?
@@ -323,3 +329,48 @@
               (apply max)
               )))
       random-record))))
+
+
+(defn days [^java.time.LocalDate start]
+  "Infinite seq of days"
+  (iterate #(.plusDays % 1) start))
+
+
+(defn weekday?
+  [^java.time.LocalDate day]
+  (not (#{DayOfWeek/SATURDAY DayOfWeek/SUNDAY} (.getDayOfWeek day))))
+
+
+(defn workday
+  "Equivalent of Excel's WORKDAY function, giving the workday n days after start-date, accounting for weekends and an optional set of holidays."
+  ([start-date n] (workday start-date n #{}))
+  ([start-date n holidays]
+   (first
+    (sequence
+     (comp
+      (filter weekday?)
+      (remove holidays)
+      (drop n))
+     (days start-date)))))
+
+
+(comment
+  (workday (LocalDate/parse "2025-10-04") 0)
+  ;; => #object[java.time.LocalDate 0x192b2325 "2025-10-06"]
+  (workday (LocalDate/parse "2025-10-04") 5)
+  ;; => #object[java.time.LocalDate 0x4d5c220b "2025-10-13"]
+  (workday (LocalDate/parse "2025-10-04") 10)
+  ;; => #object[java.time.LocalDate 0x61585f80 "2025-10-20"]
+  ())
+
+
+(defn parse-date [s]
+  (LocalDate/parse s))
+
+(defmulti yyyy-MM-dd type)
+
+(defmethod yyyy-MM-dd LocalDate [date]
+  (.format DateTimeFormatter/ISO_LOCAL_DATE date))
+
+(defmethod yyyy-MM-dd java.util.Date [d]
+  (yyyy-MM-dd (LocalDate/ofInstant (.toInstant d) (ZoneId/of "Z"))))
