@@ -2,7 +2,109 @@
   (:require
    [clj-yaml.core :as yaml]
    [clojure.set :as set]
+   [clojure.spec.alpha :as spec]
+   [pert.graph :as graph]
+   [pert.task :as task]
    ))
+
+
+(def bear-yaml "
+Breakdown:
+- Tasks:
+  - Ship bear:
+    - Dress bear:
+      - Embroider:
+        - Cut cloth
+        - Sew clothes
+      - Sew accessories:
+        - Cut accessories
+      - Stuff fur:
+        - Cut fur
+    - Package bear
+- Parallel:
+  - Embroider
+  - Sew accessories
+  - Stuff fur
+Details:
+- Ship bear:
+  - Description: Transport bear to shipping
+  - Estimate:
+    - Type: 3-point
+    - Low: 1
+    - Estimate: 1
+    - High: 1
+- Dress bear:
+  - Description: Dress bear in custom clothing
+  - Estimate:
+    - Type: 3-point
+    - Low: 3
+    - Estimate: 3
+    - High: 3
+- Embroider:
+  - Description: Embroider custom name and message on the bear
+  - Estimate:
+    - Type: 3-point
+    - Low: 2
+    - Estimate: 2
+    - High: 2
+- Cut cloth:
+  - Description: Cut cloth for the bear’s size
+  - Started: 1/14/2020
+  - Estimate:
+    - Type: 3-point
+    - Low: 1
+    - Estimate: 2
+    - High: 4
+- Sew clothes:
+  - Description: Sew cloth into bear clothing
+  - Estimate:
+    - Type: 3-point
+    - Low: 1
+    - Estimate: 2
+    - High: 6
+- Sew accessories:
+  - Description: Attach accessories to the bear
+  - Estimate:
+    - Type: 3-point
+    - Low: 0
+    - Estimate: 2
+    - High: 3
+- Cut accessories:
+  - Description: Cut ordered bear accessories
+  - Estimate:
+    - Type: 3-point
+    - Low: 0
+    - Estimate: 1
+    - High: 3
+- Stuff fur:
+  - Description: Stuff the cut fur to the right density for the quality of the product.
+  - Started: 1/3/2020
+  - Finished: 1/14/2020
+  - Estimate:
+    - Type: 3-point
+    - Low: 4
+    - Estimate: 6
+    - High: 13
+- Cut fur:
+  - Description: Cut fur to the shape of the needed bear.
+  - Started: 1/1/2020
+  - Finished: 1/3/2020
+  - Estimate:
+    - Type: 3-point
+    - Low: 1
+    - Estimate: 2
+    - High: 4
+- Package bear:
+  - Description: Package bear for stackable shipping
+  - Estimate:
+    - Type: 3-point
+    - Low: 1
+    - Estimate: 1
+    - High: 1
+")
+
+
+
 
 
 (yaml/parse-string "
@@ -28,8 +130,15 @@ Tasks:
     - Stuff fur
 - Package bear
 - Ship bear
+Parallel:
+- Clothes
+- Accessories
+- Fur
 
 " :keywords false))
+
+(get breakdown "Tasks")
+(get breakdown "Parallel")
 
 
 (get breakdown "Tasks")
@@ -386,4 +495,42 @@ parsed-yaml ;; list of either ordered maps or an ID
  "3.1" #{"1" "2"}
  "2" #{"2.1" "2.2" "2.3" "1"}
  "1.1" #{}}
+
+
+(defn task-ids
+  "Map from task name to sequential integer ID, starting from 1, in topological order of deps."
+  [deps]
+  (into {}
+        (map-indexed (fn [idx task] [task (inc idx)]))
+        (graph/sort-topological deps)))
+
+
+bear-yaml
+
+
+
+(defn backlog-data
+  "Shape data from YAML file into backlog spec"
+  [yml-data])
+
+
+(spec/fdef backlog-data
+  :ret ::task/backlog)
+
+(defn parse-backlog [yml-string]
+  (-> yml-string yaml/parse-string backlog-data))
+
+
+
+(defn backlog
+  [yml-file]
+  (-> yml-file slurp parse-backlog))
+
+
+(spec/fdef parse-backlog
+  :ret ::task/backlog)
+
+
+(spec/fdef backlog
+  :ret ::task/backlog)
 
