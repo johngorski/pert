@@ -1,6 +1,7 @@
 (ns pert.yaml
   (:require
    [clj-yaml.core :as yaml]
+   [clojure.edn :as edn]
    [clojure.set :as set]
    [clojure.spec.alpha :as spec]
    [pert.graph :as graph]
@@ -23,6 +24,7 @@ Breakdown:
     - Package bear
 - Parallel:
   - Embroider
+  - Cut accessories
   - Sew accessories
   - Stuff fur
 Details:
@@ -475,7 +477,6 @@ parsed-yaml ;; list of either ordered maps or an ID
   [task-tree]
   (apply merge-with set/union
          ((juxt prev-deps
-                parent-deps
                 child-deps)
           task-tree)))
 
@@ -508,18 +509,63 @@ parsed-yaml ;; list of either ordered maps or an ID
 bear-yaml
 
 
+(defn yml-data-breakdown [yml-data]
+  (into {} (get yml-data "Breakdown")))
+
+(defn yml-data-task-tree [yml-data]
+  (get (yml-data-breakdown yml-data) "Tasks"))
+
+(defn yml-data-parallel [yml-data]
+  (set (get (yml-data-breakdown yml-data) "Parallel")))
+
+(defn yml-data-details [yml-data]
+  (into {}
+        (map (fn [entry]
+               (let [[task-name items] (first entry)]
+                 [task-name (into {} items)])))
+        (get yml-data "Details")))
+
+(defn remove-parallel-deps
+  "Remove cross-dependencies between parallel tasks."
+  [parallel deps]
+  (into {}
+        (map (fn [[task task-deps]]
+               [task (if (parallel task)
+                       (set/difference task-deps parallel)
+                       task-deps)]))
+        deps))
+
+(yml-data-parallel (yaml/parse-string bear-yaml :keywords false))
 
 (defn backlog-data
   "Shape data from YAML file into backlog spec"
-  [yml-data])
+  [yml-data]
+  (let [task-tree (yml-data-task-tree yml-data)
+        parallel  (yml-data-parallel yml-data)
+        deps      (remove-parallel-deps parallel (breakdown-deps task-tree))
+        ids       (task-ids deps)
+        details   (yml-data-details yml-data)]
+    (->> (keys ids)
+         (map (fn [task-name]
+                (let [detail (get details task-name {})]
+                  (cond-> {:id    (str (ids task-name))
+                           :title task-name
+                           :deps  (set (map (comp str ids) (get deps task-name)))}
+                    (get detail "Description") (assoc :description (get detail "Description"))
+                    (get detail "Started")     (assoc :started (str (get detail "Started")))
+                    (get detail "Finished")    (assoc :finished (str (get detail "Finished")))))))
+         (sort-by (comp edn/read-string :id)))))
+
 
 
 (spec/fdef backlog-data
   :ret ::task/backlog)
 
 (defn parse-backlog [yml-string]
-  (-> yml-string yaml/parse-string backlog-data))
+  (->> (yaml/parse-string yml-string :keywords false)
+       backlog-data))
 
+(parse-backlog bear-yaml)
 
 
 (defn backlog
@@ -533,4 +579,7 @@ bear-yaml
 
 (spec/fdef backlog
   :ret ::task/backlog)
+
+
+(parse-backlog bear-yaml)
 
