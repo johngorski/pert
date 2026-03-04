@@ -9,6 +9,54 @@
    ))
 
 
+
+(defmulti estimate
+  "TODO: Parse estimates from CSV row. Make methods based on the estimation type."
+  ;; see random-variables/construct methods
+  ;; Also worth spec'ing these
+  (fn [props] (def *dbg props) (get props "Type" "Unknown")))
+
+(select-keys {"a" 1 "b" 2 "c" 3} ["b" "a"])
+
+(let [{:strs [a c]} {"a" 1 "b" 2 "c" 3}] c)
+(defn- num [s]
+  (cond
+    (number? s)
+    (double s)
+
+    (string? s)
+    (recur (edn/read-string s))
+
+    :default
+    ##NaN
+    ))
+
+(defmethod estimate "certain"
+  [{:strs [Estimate]}]
+  [:definitely (num Estimate)])
+
+(defmethod estimate "gaussian"
+  [{:strs [Estimate StandardVariation]}]
+  [:gaussian (num Estimate) (num StandardVariation)])
+
+(defmethod estimate "3-point"
+  [{:strs [Low Estimate High]}]
+  [:pert-3pt (num Low) (num Estimate) (num High)])
+
+(defmethod estimate "3-point gaussian"
+  [{:strs [Low Estimate High]}]
+  [:pert (num Low) (num Estimate) (num High)])
+
+(defmethod estimate "even"
+  [{:strs [Low High]}]
+  [:uniform (num Low) (num High)])
+
+(defmethod estimate "Unknown"
+  [_]
+  [:combine-with abs :cauchy])
+
+
+
 (def bear-yaml "
 Breakdown:
 - Tasks:
@@ -29,12 +77,12 @@ Breakdown:
   - Stuff fur
 Details:
 - Ship bear:
-  - Description: Transport bear to shipping
-  - Estimate:
-    - Type: 3-point
-    - Low: 1
-    - Estimate: 1
-    - High: 1
+  Description: Transport bear to shipping
+  Estimate:
+    Type: 3-point
+    Low: 1
+    Estimate: 1
+    High: 1
 - Dress bear:
   - Description: Dress bear in custom clothing
   - Estimate:
@@ -506,9 +554,6 @@ parsed-yaml ;; list of either ordered maps or an ID
         (graph/sort-topological deps)))
 
 
-bear-yaml
-
-
 (defn yml-data-breakdown [yml-data]
   (into {} (get yml-data "Breakdown")))
 
@@ -519,11 +564,7 @@ bear-yaml
   (set (get (yml-data-breakdown yml-data) "Parallel")))
 
 (defn yml-data-details [yml-data]
-  (into {}
-        (map (fn [entry]
-               (let [[task-name items] (first entry)]
-                 [task-name (into {} items)])))
-        (get yml-data "Details")))
+  (get yml-data "Details"))
 
 (defn remove-parallel-deps
   "Remove cross-dependencies between parallel tasks."
@@ -535,7 +576,6 @@ bear-yaml
                        task-deps)]))
         deps))
 
-(yml-data-parallel (yaml/parse-string bear-yaml :keywords false))
 
 (defn backlog-data
   "Shape data from YAML file into backlog spec"
@@ -553,7 +593,8 @@ bear-yaml
                            :deps  (set (map (comp str ids) (get deps task-name)))}
                     (get detail "Description") (assoc :description (get detail "Description"))
                     (get detail "Started")     (assoc :started (str (get detail "Started")))
-                    (get detail "Finished")    (assoc :finished (str (get detail "Finished")))))))
+                    (get detail "Finished")    (assoc :finished (str (get detail "Finished")))
+                    (get detail "Estimate")    (assoc :estimate (estimate (get detail "Estimate")))))))
          (sort-by (comp edn/read-string :id)))))
 
 
@@ -564,8 +605,6 @@ bear-yaml
 (defn parse-backlog [yml-string]
   (->> (yaml/parse-string yml-string :keywords false)
        backlog-data))
-
-(parse-backlog bear-yaml)
 
 
 (defn backlog
@@ -579,7 +618,4 @@ bear-yaml
 
 (spec/fdef backlog
   :ret ::task/backlog)
-
-
-(parse-backlog bear-yaml)
 
