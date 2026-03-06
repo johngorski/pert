@@ -12,6 +12,7 @@
    [io.github.nextjournal/clerk "0.14.919"]
    [org.clojure/clojure "1.12.1"]
    [org.clojure/data.csv "1.0.1"]
+   [org.clojure/data.json "2.5.1"]
    [org.clojure/data.priority-map "1.1.0"]
    [org.apache.commons/commons-math3 "3.6.1"]
    ]
