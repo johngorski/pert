@@ -12,8 +12,6 @@ performance optimization.
 
 
 NEXT:
-- Read Excel files (Docjure to extract rows could be a great candidate)
-- Write out project with serial re-numbered task IDs (helpful for re-mapping from GUIDs/external URL IDs)
 - Compact task dependency view, inspired by git commit diagrams
 - Zero-out task estimates for completed items
 - Workday tooltips over project-days
